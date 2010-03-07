@@ -5,7 +5,8 @@ This project is intended to create a modelica simulator tool based on python too
 
 ## RoadMap
 
-* Create a minimum parser of the 3.1 specification.
+* Create a basic parser of the 3.1 specification.
+* Define the introspection process of a modelica entity from python.
 
 ## GUI
 
