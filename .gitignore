@@ -1,0 +1,4 @@
+*.pyc
+*~
+.emacs.desktop
+.emacs.desktop.lock

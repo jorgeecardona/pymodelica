@@ -1,17 +1,25 @@
 import unittest
+from tokens import Ident, Integer, IntegerList
+from base import IncorrectValue, ParseError
 
-class testTokens(unittest.TestCase):
+
+class testTokensLoad(unittest.TestCase):
     def setUp(self):
         pass
 
-    def testInteger(self):
-        from Modelica import Integer
+    def testIdent(self):
+        self.assertTrue(Ident.load("algo").value == "algo")
+        self.assertTrue(Ident.load("Algo").value == "Algo")
+        self.assertTrue(Ident.load("_algo").value == "_algo")
+        self.assertTrue(Ident.load("  _algo  ").value == "_algo")
 
+        self.assertRaises(ParseError, lambda: Ident.load("1algo"))
+
+    def testInteger(self):
         self.assertTrue(Integer.load(" 123     ").value == 123)
 
 
     def testIntegerList(self):
-        from Modelica import IntegerList
 
         integer_list = IntegerList.load("    123,   124 ,45  ,  4")
 
@@ -21,26 +29,29 @@ class testTokens(unittest.TestCase):
         self.assertTrue(integer_list.integers[3].value == 4)
         
     def testReal(self):
-        from Modelica import Real
-
         pass
 
     def testString(self):
-        from Modelica import String
-
         pass
 
     def testExpression(self):
-        from Modelica import Expression
-
         pass
 
     def testEquation(self):
-        from Modelica import Equation
-
         pass
 
+class testTokens(unittest.TestCase):
+    def setUp(self):
+        pass
 
+    def testIdent(self):
+
+        self.assertTrue(isinstance(Ident("algo"), Ident))
+        self.assertTrue(isinstance(Ident("_algo"), Ident))
+        self.assertTrue(isinstance(Ident("Algo"), Ident))
+
+        self.assertRaises(Exception, lambda: Ident(" algo asi "))
+        
 
 if __name__ == '__main__':
     unittest.main()
