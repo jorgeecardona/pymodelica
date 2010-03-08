@@ -61,7 +61,7 @@ class Integer(BaseModelica):
     
     def __init__(self, value=0):
         if type(value) is str:
-            self.value = int(value)
+            self.value = value
         else:
             raise IncorrectValue("Non-string passed.'")
     
@@ -80,7 +80,8 @@ class IntegerList(BaseModelica):
 
 
 class Number(BaseModelica):
-    __ebnf__ = (Integer.__ebnf__ + Optional(Literal(".") + Optional(Integer.__ebnf__ ,default = Integer("0"))), default) + Optional((Literal("e") ^ Literal("E")) + Optional(Literal("+") ^ Literal("-")) + Integer.__ebnf__).
+    __ebnf__ = ((Integer.__ebnf__ + Optional((Literal(".") + Optional(Integer.__ebnf__ ,default = Integer("0"))).setParseAction(lambda s,l,t:Integer(t[1])), default = Integer("0")) + Optional(((Literal("e") ^ Literal("E")) + Optional(Literal("+") ^ Literal("-"), default="+") + Integer.__ebnf__).setParseAction(lambda s, l, t: [t[1], Integer(t[2])]))))
+                
 
 
 
