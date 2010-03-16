@@ -1,12 +1,23 @@
 from pyparsing import Word, nums, Literal, ZeroOrMore, alphas, alphanums, QuotedString, Group
 from base import BaseModelica, IncorrectValue, NonImplemented
 
-from pyparsing import CharsNotIn, Combine
+from pyparsing import CharsNotIn, Combine, Optional
 from pyparsing import nums, alphas, alphanums, printables
 
 from string import printable
 
 s_escape = Literal("\\'") ^ "\\\"" ^ "\\?" ^ "\\\\" ^ "\\a" ^ "\\b" ^ "\\f" ^ "\\n" ^ "\\r" ^ "\\t" ^ "\\v"
+
+def escape(string):
+    return string\
+        .replace("'", "\\'").\
+        .replace("\"", "\\\"")
+        
+def unescape(string):
+    return string\
+        .replace("\\'", "'").\
+        .replace("\\\"", "\"")
+
 
 class QIdent(BaseModelica):
     __ebnf__ = Combine(Literal("'") + CharsNotIn("\\'") + Literal("'")).setParseAction(lambda s, l, t: QIdent(t[0]))
@@ -68,26 +79,22 @@ class Integer(BaseModelica):
     def dump(self):
         return str(self.value)
 
+class Number(BaseModelica):
+    __ebnf__ = (
+        Combine(Word(nums) + Optional(Literal(".") + Optional(Word(nums)))).setResultsName('mantissa') + 
+        Optional((Literal("e") ^ Literal("E")) + Optional(Literal("+") ^ Literal("-")).setResultsName('exponent_sign') + Word(nums).setResultsName('exponent'))
+        ).setParseAction(lambda s,l,t: Number(**dict(t)))
 
-class IntegerList(BaseModelica):
-    __ebnf__ = (Integer.__ebnf__ + ZeroOrMore(Literal(",") + Integer.__ebnf__)).setParseAction(lambda s, l, t: IntegerList(t[::2]))
+    mantissa = None
+    exponent = None
+    exponent_sign = None
 
-    def __init__(self, integers = []):
-        self.integers = integers
+    def __init__(self, mantissa="0", exponent_sign = "+", exponent = "0"):
+        self.mantissa = mantissa
+        self.exponent = exponent
+        self.exponent_sign = exponent_sign
+
 
     def dump(self):
-        return ", ".join(map(str, self.integers))
+        return self.mantissa + "e" + ("-" if self.exponent_sign == "-" else "") + self.exponent
 
-
-class Number(BaseModelica):
-    __ebnf__ = ((Integer.__ebnf__ + Optional((Literal(".") + Optional(Integer.__ebnf__ ,default = Integer("0"))).setParseAction(lambda s,l,t:Integer(t[1])), default = Integer("0")) + Optional(((Literal("e") ^ Literal("E")) + Optional(Literal("+") ^ Literal("-"), default="+") + Integer.__ebnf__).setParseAction(lambda s, l, t: [t[1], Integer(t[2])]))))
-                
-
-
-
-
-if __name__ == '__main__':
-    
-
-    print Integer.load("123123")
-    print IntegerList.load("123123 , 123123112, 12123123 ,123123,    12312")

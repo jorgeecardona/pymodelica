@@ -1,5 +1,5 @@
 import unittest
-from tokens import Ident, String, Integer, IntegerList
+from tokens import Ident, String, Integer, Number
 from base import IncorrectValue, ParseError
 
 
@@ -30,17 +30,9 @@ class testTokensLoad(unittest.TestCase):
         self.assertTrue(Integer.load(" 123     ").value == 123)
 
 
-    def testIntegerList(self):
-
-        integer_list = IntegerList.load("    123,   124 ,45  ,  4")
-
-        self.assertTrue(integer_list.integers[0].value == 123)
-        self.assertTrue(integer_list.integers[1].value == 124)
-        self.assertTrue(integer_list.integers[2].value == 45)
-        self.assertTrue(integer_list.integers[3].value == 4)
-        
-    def testReal(self):
-        pass
+    def testNumber(self):
+        self.assertEqual(Number.load("  12e-12").dump(), "12e-12")
+        self.assertEqual(Number.load("  12E+12").dump(), "12e12")
 
 
     def testExpression(self):
