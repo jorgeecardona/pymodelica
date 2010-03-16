@@ -1,31 +1,39 @@
-from pyparsing import Word, nums, Literal, ZeroOrMore, alphas, alphanums, QuotedString, Group
+from pyparsing import Word, nums, Literal, alphas, alphanums, QuotedString, Group
 from base import BaseModelica, IncorrectValue, NonImplemented
 
-from pyparsing import CharsNotIn, Combine, Optional
+from pyparsing import CharsNotIn, Combine, OneOrMore, ZeroOrMore, Optional
 from pyparsing import nums, alphas, alphanums, printables
 
 from string import printable
 
+from decimal import Decimal
+
 s_escape = Literal("\\'") ^ "\\\"" ^ "\\?" ^ "\\\\" ^ "\\a" ^ "\\b" ^ "\\f" ^ "\\n" ^ "\\r" ^ "\\t" ^ "\\v"
+
+def unescape(string):
+    return string\
+        .replace("\\\"","\"")\
+        .replace("\\'","'")\
+        .replace("\\\\", "\\")\
+        .replace("\\r", chr(13))\
+        .replace("\\n", chr(10))\
+        .replace("\\t", chr(9))
 
 def escape(string):
     return string\
-        .replace("'", "\\'").\
-        .replace("\"", "\\\"")
-        
-def unescape(string):
-    return string\
-        .replace("\\'", "'").\
-        .replace("\\\"", "\"")
-
+        .replace("\"","\\\"")\
+        .replace("'","\\'")\
+        .replace("\\","\\\\")\
+        .replace(chr(13),"\\r")\
+        .replace(chr(10),"\\n")\
+        .replace(chr(9),"\\t")
 
 class QIdent(BaseModelica):
-    __ebnf__ = Combine(Literal("'") + CharsNotIn("\\'") + Literal("'")).setParseAction(lambda s, l, t: QIdent(t[0]))
+    __ebnf__ = (Literal("'") + Combine(OneOrMore(CharsNotIn("\\'") ^ s_escape )) + Literal("'")).setParseAction(lambda s, l, t: QIdent(t[1]))
 
     value = None
 
     def __init__(self, value= None):
-        print value
         if type(value) is str:
             self.value = value
         else:
@@ -52,19 +60,22 @@ class Ident(BaseModelica):
 
 class String(BaseModelica):
     __ebnf__ = (Literal('"') + Combine(ZeroOrMore(CharsNotIn("\\\"") ^ s_escape )) + Literal('"')).setParseAction(lambda s, l, t: String(
-            t[1].replace("\\\"","\"")
+            t[1]
             ))
 
     value = None
 
     def __init__(self, value= None):
+        # Receiv a string with the escaping elements.
+        value = unescape(value)
+        
         if type(value) is str:
             self.value = value
         else:
             raise IncorrectValue("Non-string passed.")
 
     def dump(self):
-        return '"' + self.value + '"'
+        return '"' + escape(self.value) + '"'
 
     
 class Integer(BaseModelica):
@@ -90,11 +101,14 @@ class Number(BaseModelica):
     exponent_sign = None
 
     def __init__(self, mantissa="0", exponent_sign = "+", exponent = "0"):
-        self.mantissa = mantissa
-        self.exponent = exponent
-        self.exponent_sign = exponent_sign
+
+        self.mantissa = Decimal(mantissa)
+        self.exponent = Decimal(exponent)
+
+        if exponent_sign is "-":
+            self.exponent = -self.exponent
 
 
     def dump(self):
-        return self.mantissa + "e" + ("-" if self.exponent_sign == "-" else "") + self.exponent
+        return str(self.mantissa) + (("e" + str(self.exponent)) if self.exponent !=Decimal(0) else "")
 
