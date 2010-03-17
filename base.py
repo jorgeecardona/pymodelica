@@ -8,7 +8,7 @@ class IncorrectValue(Exception):
 class ParseError(Exception):
     pass
 
-class BaseModelica:
+class BaseModelica(object):
     """
     BaseModelica
     ============

@@ -43,17 +43,21 @@ class QIdent(BaseModelica):
         return "'" + self.value + "'"
 
 class Ident(BaseModelica):
-    __ebnf__ = (Word(alphas + "_", alphanums + "_").setParseAction(lambda s, l, t: Ident(t[0]))) ^ QIdent.__ebnf__
+    __ebnf__ = (Word(alphas + "_", alphanums + "_") ^ QIdent.__ebnf__).setParseAction(lambda s, l, t: Ident(t[0]))
 
     value = None
 
     def __init__(self, value = None):
+
         if type(value) is str:
             self.value = value
+
         elif type(value) is QIdent:
-            self.value = value.value
+            self.value = value.dump()
+
         else:
-            raise IncorrectValue("Non-string passed.")
+            print value
+            raise IncorrectValue("Non-string or QIdent passed.")
 
     def dump(self):
         return str(self.value)    
@@ -66,7 +70,7 @@ class String(BaseModelica):
     value = None
 
     def __init__(self, value= None):
-        # Receiv a string with the escaping elements.
+        # Receive a string with the escaping elements.
         value = unescape(value)
         
         if type(value) is str:
@@ -83,7 +87,7 @@ class Integer(BaseModelica):
     
     def __init__(self, value=0):
         if type(value) is str:
-            self.value = value
+            self.value = Decimal(value)
         else:
             raise IncorrectValue("Non-string passed.'")
     
