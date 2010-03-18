@@ -100,9 +100,8 @@ class Number(BaseModelica):
         Optional((Literal("e") ^ Literal("E")) + Optional(Literal("+") ^ Literal("-")).setResultsName('exponent_sign') + Word(nums).setResultsName('exponent'))
         ).setParseAction(lambda s,l,t: Number(**dict(t)))
 
-    mantissa = None
-    exponent = None
-    exponent_sign = None
+    mantissa = Decimal(0)
+    exponent = Decimal(0)
 
     def __init__(self, mantissa="0", exponent_sign = "+", exponent = "0"):
 
