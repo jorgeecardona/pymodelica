@@ -1,9 +1,22 @@
 from base import BaseModelica, IncorrectValue, NonImplemented
 
-from pyparsing import CharsNotIn, Combine, OneOrMore, ZeroOrMore, Optional
+from pyparsing import CharsNotIn, Combine, OneOrMore, ZeroOrMore, Optional, Forward
 from pyparsing import Literal
 
-from tokens import String
+from tokens import String, Ident
+
+class Name(BaseModelica):
+    __ebnf__ = Forward()
+    __ebnf__ << (Ident.__ebnf__.setResultsName("basename") + Optional(Literal(".").suppress() + __ebnf__.setResultsName("names"))).setParseAction(lambda s, l, t: Name(**t))
+
+    basename = Ident("")
+    names = []
+    def __init__(self, basename, names):
+        self.basename = basename
+        self.names = names
+
+    def dump(self):
+        return "%s.%s"%(self.basename, self.names)
 
 class ClassModification(BaseModelica):
     __ebnf__ = Literal("1")
