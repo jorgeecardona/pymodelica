@@ -6,17 +6,14 @@ from pyparsing import Literal
 from tokens import String, Ident
 
 class Name(BaseModelica):
-    __ebnf__ = Forward()
-    __ebnf__ << (Ident.__ebnf__.setResultsName("basename") + Optional(Literal(".").suppress() + __ebnf__.setResultsName("names"))).setParseAction(lambda s, l, t: Name(**t))
+    __ebnf__ = (Ident.__ebnf__ + ZeroOrMore(Literal(".").suppress() + Ident.__ebnf__)).setParseAction(lambda s, l, t: Name(list(t)))
 
-    basename = Ident("")
     names = []
-    def __init__(self, basename, names):
-        self.basename = basename
+    def __init__(self, names):
         self.names = names
 
     def dump(self):
-        return "%s.%s"%(self.basename, self.names)
+        return ".".join(map(str, self.names))
 
 class ClassModification(BaseModelica):
     __ebnf__ = Literal("1")

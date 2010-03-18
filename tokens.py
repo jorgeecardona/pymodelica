@@ -62,6 +62,10 @@ class Ident(BaseModelica):
     def dump(self):
         return str(self.value)    
 
+    def __repr__(self):
+        return "IDENT: %s"%str(self)
+
+
 class String(BaseModelica):
     __ebnf__ = (Literal('"') + Combine(ZeroOrMore(CharsNotIn("\\\"") ^ s_escape )) + Literal('"')).setParseAction(lambda s, l, t: String(
             t[1]
@@ -94,6 +98,9 @@ class Integer(BaseModelica):
     def dump(self):
         return str(self.value)
 
+    def __repr__(self):
+        return "INTEGER: %s"%str(self)
+
 class Number(BaseModelica):
     __ebnf__ = (
         Combine(Word(nums) + Optional(Literal(".") + Optional(Word(nums)))).setResultsName('mantissa') + 
@@ -115,3 +122,6 @@ class Number(BaseModelica):
     def dump(self):
         return str(self.mantissa) + (("e" + str(self.exponent)) if self.exponent !=Decimal(0) else "")
 
+
+    def __repr__(self):
+        return "NUMBER: %s"%str(self)
