@@ -30,7 +30,7 @@ class BaseModelica(object):
         except:
             raise ParseError()
     
-    def dump(self):
+    def dump(self, indent = 0):
         raise NonImplemented
 
     def __str__(self):
