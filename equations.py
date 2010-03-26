@@ -27,7 +27,6 @@ class EquationSection(BaseModelica):
         self.initial = initial
         self.equations = equations
 
-
     def dump(self, indent = 0):
         msg =  (" " * indent)
         msg += ("initial " if self.initial else "")
