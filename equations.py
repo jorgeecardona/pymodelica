@@ -9,13 +9,92 @@ class AlgorithmSection(BaseModelica):
     pass
 
 class Equation(BaseModelica):
-    pass
+    def __init__(self, 
+                 simple_expression = None, expression = None, 
+                 if_equation = None, 
+                 for_equation = None, 
+                 connect_clause = None, 
+                 when_equation = None, 
+                 function_identifier = None, function_args = None,
+                 comment = None):
+        # Test for first kind: simple_expression = expression.
+        if (type(simple_expression) is SimpleExpression) and (type(expression) is Expression):
+            self.simple_expression = simple_expression
+            self.expression = expression
+            self.type = 'equation'
 
+        elif type(if_equation) is IfEquation:
+            self.if_equation = if_equation
+            self.type = 'if'
+
+        elif type(for_equation) is IfEquation:
+            self.for_equation = for_equation
+            self.type = 'for'
+
+        elif type(connect_clause) is ConnectClause:
+            self.connect_clause = connect_clause
+            self.type = 'connect'
+
+        elif type(when_equation) is WhenEquation:
+            self.when_equation = when_equation
+            self.type = 'when'
+            
+        elif (type(function_identifier) is Identifier) and (type(function_args) is FunctionCallArgs):
+            self.function_identifier = function_identifier
+            self.function_args
+            self.type = 'function'
+
+        else:
+            raise Exception("Incorrect type of equation.")
+
+        self.comment = comment
+
+
+    def dump(self, indent = 0):
+        if self.type is 'if':
+            return "%s %s"%(self.if_equation.dump(indent), str(self.comment))
+
+        elif self.type is 'for':
+            return "%s %s"%(self.for_equation.dump(indent), str(self.comment))
+
+        elif self.type is 'when':
+            return "%s %s"%(self.when_equation.dump(indent), str(self.comment))
+
+        elif self.type is 'connect':
+            return "%s %s"%(self.connect_clause.dump(indent), str(self.comment))
+
+        elif self.type is 'equation':
+            return "%s = %s %s"%(self.simple_expression.dump(indent), str(self.expression), str(self.comment))
+
+        elif self.type is 'function':
+            return  "%s%s %s"%(self.function_identifier.dump(identifier), str(self.function_args), str(self.comment))
+
+        else:
+            raise Exception("Equation without type.")
+        
 class Statement(BaseModelica):
     pass
 
 class IfEquation(BaseModelica):
-    pass
+    def __init__(self, first_expression, first_equations, else_expressions = [], else_equations = []):
+        self.first_expression = first_expression
+        self.first_equations = first_equations
+        self.else_expressions = else_expressions
+        self.else_equations = else_equations
+
+    def dump(self, indent = 0):
+        msg = " " * indent + "if %s then\n"%(str(self.first_expression))
+        msg += "\n".join(map(lambda x: x.dump(indent + 2) + ";", self.first_equations))
+
+        for expression, equations in zip(else_expressions, else_equations):
+            msg += "\n" + " " * indent + "elseif %s then\n"%(str(expression))
+            msg += "\n".join(map(lambda x: x.dump(indent + 2) + ";", equations))
+        
+        if len(else_expressions) < len(else_equations):
+            msg += "\n" + " " * indent + "else\n"
+            msg += "\n".join(map(lambda x: x.dump(indent + 2) + ";", else_equations[-1]))
+
+        msg += "\n" + " " * indent + "end if"
 
 class IfStatement(BaseModelica):
     def __init__(self, first_expression, first_statements, else_expressions = [], else_statements = []):
@@ -29,18 +108,14 @@ class IfStatement(BaseModelica):
         msg += "\n".join(map(lambda x: x.dump(indent + 2) + ";", self.first_statements))
 
         for expression, statements in zip(else_expressions, else_statements):
-            msg += " " * indent + "elseif %s then\n"%(str(expression))
+            msg += "\n" + " " * indent + "elseif %s then\n"%(str(expression))
             msg += "\n".join(map(lambda x: x.dump(indent + 2) + ";", statements))
         
         if len(else_expressions) < len(else_statements):
-            
-            
-            
+            msg += "\n" + " " * indent + "else\n"
+            msg += "\n".join(map(lambda x: x.dump(indent + 2) + ";", else_statements[-1]))
 
-            
-            
-
-        
+        msg += "\n" + " " * indent + "end if"
 
 class ForEquation(BaseModelica):
     def __init__(self, indices, equations = []):
