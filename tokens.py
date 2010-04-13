@@ -75,7 +75,7 @@ class String(BaseModelica):
 
     def __init__(self, value= None):
         # Receive a string with the escaping elements.
-        value = unescape(value)
+        value = unescape(valu
         
         if type(value) is str:
             self.value = value

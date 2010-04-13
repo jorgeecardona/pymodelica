@@ -36,3 +36,6 @@ class BaseModelica(object):
     def __str__(self):
         return self.dump()
 
+    def __repr__(self):
+        return "%s: %s"%(str(self.__class__.__name__), str(self))
+
