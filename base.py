@@ -21,13 +21,36 @@ class BaseModelica(object):
     * **dump(self)** It return the element in string modelica format.
 
     """
-    __ebnf__ = Forward()
+
+    @classmethod
+    def ebnf(cls, syntax = None):
+
+        if syntax is None:
+
+            if not hasattr(cls, '__ebnf__'):
+                cls.__ebnf__ = Forward()
+
+            return cls.__ebnf__
+
+        else:
+            if not hasattr(cls, '__ebnf__'):
+                cls.__ebnf__ = syntax
+            else:
+                cls.__ebnf__ << syntax
+
+            return cls.__ebnf__
+                
+
+        
+
+
     
+
     @classmethod
     def load(cls, string):
         # This reads a string and return the element created.
         try:
-            return cls.__ebnf__.parseString(string)[0]
+            return cls.ebnf().parseString(string)[0]
         except:
             raise ParseError()
     

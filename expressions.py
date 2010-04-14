@@ -61,3 +61,27 @@ class Comment(BaseModelica):
 
         return s
         
+
+
+class Expression(BaseModelica):
+    def __init__(self, identifier):
+        self.identifier = identifier
+
+    def dump(self, indent = 0):
+        return str(self.identifier)
+
+
+class ComponentReference(BaseModelica):
+    def __init__(self, identifier):
+        self.identifier = identifier
+
+    def dump(self, indent = 0):
+        return str(self.identifier)
+
+Expression.ebnf(
+    Ident.ebnf().setResultsName("identifier")
+).setParseAction(lambda s,l,t: Expression(**dict(t)))
+
+ComponentReference.ebnf(
+    Ident.ebnf().setResultsName("identifier")
+).setParseAction(lambda s,l,t: ComponentReference(**dict(t)))
