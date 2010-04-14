@@ -1,6 +1,7 @@
-from pyparsing import Optional, Literal, ZeroOrMore
+from pyparsing import Optional, Literal, ZeroOrMore, Forward
 from base import BaseModelica
 
+from tokens import Ident
 
 class EquationSection(BaseModelica):
     pass
@@ -71,16 +72,33 @@ class Equation(BaseModelica):
 
         else:
             raise Exception("Equation without type.")
+
+class Equation(BaseModelica):
+    pass
         
 class Statement(BaseModelica):
     pass
 
-class IfEquation(BaseModelica):
-    def __init__(self, first_expression, first_equations, else_expressions = [], else_equations = []):
+class FunctionCallEquation(Equation):
+    def __init__(self, identifier, args, comment = None):
+        self.identifier = identifier
+        self.args = args
+        self.comment = comment
+
+    def dump(self, indent = 0):
+        ret = "%s%s"%(self.identifier, self.args)
+        if type(self.comment) is Comment:
+            ret += " %s"%(str(self.comment))            
+        return ret
+        
+
+class IfEquation(Equation):
+    def __init__(self, first_expression, first_equations, else_expressions = [], else_equations = [], comment = None):
         self.first_expression = first_expression
         self.first_equations = first_equations
         self.else_expressions = else_expressions
         self.else_equations = else_equations
+        self.comment = comment
 
     def dump(self, indent = 0):
         msg = " " * indent + "if %s then\n"%(str(self.first_expression))
@@ -96,12 +114,19 @@ class IfEquation(BaseModelica):
 
         msg += "\n" + " " * indent + "end if"
 
-class IfStatement(BaseModelica):
-    def __init__(self, first_expression, first_statements, else_expressions = [], else_statements = []):
+        if type(self.comment) is Comment:
+            msg += " %s"%(str(self.comment))            
+        return msg
+
+
+class IfStatement(Statement):
+    def __init__(self, first_expression, first_statements, else_expressions = [], else_statements = [], comment = None):
         self.first_expression = first_expression
         self.first_statements = first_statements
         self.else_expressions = else_expressions
         self.else_statements = else_statements
+        
+        self.comment = comment
 
     def dump(self, indent = 0):
         msg = " " * indent + "if %s then\n"%(str(self.first_expression))
@@ -117,46 +142,69 @@ class IfStatement(BaseModelica):
 
         msg += "\n" + " " * indent + "end if"
 
-class ForEquation(BaseModelica):
-    def __init__(self, indices, equations = []):
+        if type(self.comment) is Comment:
+            msg += " %s"%(str(self.comment))            
+        return msg
+
+
+class ForEquation(Equation):
+    def __init__(self, indices, equations = [], comment = None):
         self.indices = indices
         self.equations = equations
+
+        self.comment = comment
 
     def dump(self, indent = 0):
         msg = " " * indent + "for %s loop\n"%(str(self.indices))
         msg += "\n".join(map(lambda x: x.dump(indent + 2) + ";", self.equations))
         msg += "\n" + " " * indent + "end for"
+
+        if type(self.comment) is Comment:
+            msg += " %s"%(str(self.comment))            
         return msg
 
 
-class ForStatement(BaseModelica):
+class ForStatement(Statement):
+    __ebnf__ = Forward()
     def __init__(self, indices, statements = []):
         self.indices = indices
         self.statements = statements
 
     def dump(self, indent = 0):
-        msg = " " * indent + "for %s loop\n"
-        msg += "\n".join(map(lambda x: x.dump(indent + 2) + ";", self.statements))
+        msg = " " * indent + "for %s loop\n"%(str(self.indices))
+        msg += "\n".join(map(lambda x: " " * (indent + 2) + x.dump() + ";", self.statements))
         msg += "\n" + " " * indent + "end for"
         return msg
 
 class ForIndices(BaseModelica):
+    __ebnf__ = Forward()
     def __init__(self, indices = []):
         self.indices = indices
 
     def dump(self, indent = 0):
-        return ", ".join(map(str, indices))
+        return ", ".join(map(str, self.indices))
+
 
 class ForIndex(BaseModelica):
-    def __init__(self, identifier, in_expression = None):
+
+#    __ebnf__ = Ident.__ebnf__.setResultsName("identifier") + Optional(Literal("in") + Expression.__ebnf__.setResultsName("expression"))
+    __ebnf__ = Ident.__ebnf__.setResultsName("identifier")
+
+    # Return a new element
+    __ebnf__.setParseAction(lambda s, l, t: ForIndex(**dict(t)))
+
+    def __init__(self, identifier, expression = None):
         self.identifier = identifier
-        self.in_expression = in_expression if (type(in_expression) is Expression) else None
+#        self.expression = expression if isinstance(expression, Expression) else None
+        self.expression = expression if isinstance(expression, object) else None
 
     def dump(self, indent = 0):
         msg = str(self.identifier)
-        if self.in_expression is not None:
-            msg += " in %s"%(self.in_expression)
+        if self.expression is not None:
+            msg += " in %s"%(self.expression)
         return msg
+
+
 
 class WhileStatement(BaseModelica):
     pass
@@ -204,5 +252,17 @@ class EquationSection(BaseModelica):
             msg += "\n" + (" " * indent) + eq.dump(indent + 2) + ";"
 
         return msg
+
+
+# Complete ebnf
+ForStatement.__ebnf__ << \
+    Literal("for") + ForIndices.__ebnf__.setResultsName("indices") + Literal("loop") + ZeroOrMore( Literal(";").suppress()).setResultsName("statements") + Literal("end") + Literal("for")
+
+ForStatement.__ebnf__.setParseAction(lambda s, l, t: ForStatement(**dict(t)))
+
+ForIndices.__ebnf__  << \
+    ForIndex.__ebnf__ + ZeroOrMore(Literal(",").suppress() + ForIndex.__ebnf__)
+
+ForIndices.__ebnf__.setParseAction(lambda s,l,t: ForIndices(t))
 
 

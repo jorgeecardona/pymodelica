@@ -43,7 +43,8 @@ class QIdent(BaseModelica):
         return "'" + self.value + "'"
 
 class Ident(BaseModelica):
-    __ebnf__ = (Word(alphas + "_", alphanums + "_") ^ QIdent.__ebnf__).setParseAction(lambda s, l, t: Ident(t[0]))
+    __ebnf__ = Word(alphas + "_", alphanums + "_") ^ QIdent.__ebnf__
+    __ebnf__.setParseAction(lambda s, l, t: Ident(t[0]))
 
     value = None
 
@@ -59,7 +60,7 @@ class Ident(BaseModelica):
             print value
             raise IncorrectValue("Non-string or QIdent passed.")
 
-    def dump(self):
+    def dump(self, indent = 0):
         return str(self.value)    
 
     def __repr__(self):
@@ -75,7 +76,6 @@ class String(BaseModelica):
 
     def __init__(self, value= None):
         # Receive a string with the escaping elements.
-        value = unescape(valu
         
         if type(value) is str:
             self.value = value

@@ -1,3 +1,4 @@
+from pyparsing import Forward
 
 class NonImplemented(Exception):
     pass
@@ -20,7 +21,7 @@ class BaseModelica(object):
     * **dump(self)** It return the element in string modelica format.
 
     """
-    __ebnf__ = None
+    __ebnf__ = Forward()
     
     @classmethod
     def load(cls, string):
