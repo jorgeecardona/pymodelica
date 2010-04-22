@@ -165,7 +165,6 @@ class ForEquation(Equation):
 
 
 class ForStatement(Statement):
-    __ebnf__ = Forward()
     def __init__(self, indices, statements = []):
         self.indices = indices
         self.statements = statements
@@ -186,12 +185,6 @@ class ForIndices(BaseModelica):
 
 
 class ForIndex(BaseModelica):
-
-#    __ebnf__ = Ident.__ebnf__.setResultsName("identifier") + Optional(Literal("in") + Expression.__ebnf__.setResultsName("expression"))
-    __ebnf__ = Ident.__ebnf__.setResultsName("identifier")
-
-    # Return a new element
-    __ebnf__.setParseAction(lambda s, l, t: ForIndex(**dict(t)))
 
     def __init__(self, identifier, expression = None):
         self.identifier = identifier
@@ -254,15 +247,23 @@ class EquationSection(BaseModelica):
         return msg
 
 
-# Complete ebnf
-ForStatement.__ebnf__ << \
-    Literal("for") + ForIndices.__ebnf__.setResultsName("indices") + Literal("loop") + ZeroOrMore( Literal(";").suppress()).setResultsName("statements") + Literal("end") + Literal("for")
+ForEquation.ebnf(
+    syntax = Literal("for") + ForIndices.ebnf().setResultsName("indices") + Literal("loop") + ZeroOrMore( Equation.ebnf() + Literal(";").suppress()).setResultsName("equations") + Literal("end") + Literal("for"),
+    action = lambda s, l, t: ForEquation(**dict(t))
+    )
 
-ForStatement.__ebnf__.setParseAction(lambda s, l, t: ForStatement(**dict(t)))
+ForStatement.ebnf( 
+    syntax =  Literal("for") + ForIndices.ebnf().setResultsName("indices") + Literal("loop") + ZeroOrMore( Statement.ebnf() + Literal(";").suppress()).setResultsName("statements") + Literal("end") + Literal("for"),
+    action = lambda s, l, t: ForStatement(**dict(t))
+    )
 
-ForIndices.__ebnf__  << \
-    ForIndex.__ebnf__ + ZeroOrMore(Literal(",").suppress() + ForIndex.__ebnf__)
+ForIndices.ebnf(
+    syntax = ForIndex.ebnf + ZeroOrMore(Literal(",").suppress() + ForIndex.ebnf()),
+    action = lambda s,l,t: ForIndices(t)
+    )
 
-ForIndices.__ebnf__.setParseAction(lambda s,l,t: ForIndices(t))
-
+ForIndex.ebnf(
+    syntax = Ident.ebnf().setResultsName("identifier"),
+    action = lambda s, l, t: ForIndex(**dict(t))
+    )
 
