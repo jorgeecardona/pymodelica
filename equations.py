@@ -166,7 +166,6 @@ class ForEquation(Equation):
 
 
 class ForStatement(Statement):
-    __ebnf__ = Forward()
     def __init__(self, indices, statements = []):
         self.indices = indices
         self.statements = statements
@@ -262,57 +261,38 @@ class EquationSection(BaseModelica):
         return msg
 
 
-
-
-ForEquation.ebnf(
-    
-    Literal("for") + ForIndices.ebnf().setResultsName("indices") + Literal("loop") + ZeroOrMore( Equation.ebnf() + Literal(";").suppress()).setResultsName("equations") + Literal("end") + Literal("for")
-    
-    ).setParseAction(lambda s, l, t: ForEquation(**dict(t)))
-
-
-
-ForStatement.ebnf(
-    
-    Literal("for") + ForIndices.ebnf().setResultsName("indices") + Literal("loop") + ZeroOrMore( Statement.ebnf() + Literal(";").suppress()).setResultsName("statements") + Literal("end") + Literal("for")
-    
-    ).setParseAction(lambda s, l, t: ForStatement(**dict(t)))
-
-
-
-ForIndices.ebnf(
-    
-    ForIndex.ebnf() + ZeroOrMore(Literal(",").suppress() + ForIndex.ebnf())
-    
-    ).setParseAction(lambda s,l,t: ForIndices(t))
-
-
-
-ForIndex.ebnf(
-
-    Ident.ebnf().setResultsName('identifier')
-    
-    ).setParseAction(lambda s, l, t: ForIndex(**dict(t)))
-
-
-
 WhenEquation.ebnf(
-    
-    Literal("when") + Expression.ebnf().setResultsName("expression") + Literal("then") + ZeroOrMore(Equation.ebnf() + Literal(";").suppress()).setResultsName("equations") + Optional( Literal("elsewhen") + Expression.ebnf().setResultsName("expression_else") + Literal("then") + ZeroOrMore(Equation.ebnf() + Literal(";").suppress()).setResultsName("statements_else")) + Literal("end") + Literal("when")
-        
-    ).setParseAction(lambda s,l,t: WhenEquation(**dict(t)))
-
+    syntax = Literal("when") + Expression.ebnf().setResultsName("expression") + Literal("then") + ZeroOrMore(Equation.ebnf() + Literal(";").suppress()).setResultsName("equations") + Optional( Literal("elsewhen") + Expression.ebnf().setResultsName("expression_else") + Literal("then") + ZeroOrMore(Equation.ebnf() + Literal(";").suppress()).setResultsName("statements_else")) + Literal("end") + Literal("when"),
+    action = lambda s,l,t: WhenEquation(**dict(t))
+    )
 
 WhenStatement.ebnf(
-    
-    Literal("when") + Expression.ebnf().setResultsName("expression") + Literal("then") + ZeroOrMore(Statement.ebnf() + Literal(";").suppress()).setResultsName("statements") + Optional( Literal("elsewhen") + Expression.ebnf().setResultsName("expression_else") + Literal("then") + ZeroOrMore(Statement.ebnf() + Literal(";").suppress()).setResultsName("statements_else")) + Literal("end") + Literal("when")
-        
-    ).setParseAction(lambda s,l,t: WhenStatement(**dict(t)))
-
-
+    syntax = Literal("when") + Expression.ebnf().setResultsName("expression") + Literal("then") + ZeroOrMore(Statement.ebnf() + Literal(";").suppress()).setResultsName("statements") + Optional( Literal("elsewhen") + Expression.ebnf().setResultsName("expression_else") + Literal("then") + ZeroOrMore(Statement.ebnf() + Literal(";").suppress()).setResultsName("statements_else")) + Literal("end") + Literal("when"),
+    action = lambda s,l,t: WhenStatement(**dict(t))
+    )
 
 ConnectClause.ebnf(
-    
-    Literal("connect") + Literal("(") + ComponentReference.ebnf().setResultsName("component_1") + Literal(",") + ComponentReference.ebnf().setResultsName("component_2") + Literal(")")
+    syntax = Literal("connect") + Literal("(") + ComponentReference.ebnf().setResultsName("component_1") + Literal(",") + ComponentReference.ebnf().setResultsName("component_2") + Literal(")"),
+    action = lambda s,l,t: ConnectClause(**dict(t))
+    )
 
-    ).setParseAction(lambda s,l,t: ConnectClause(**dict(t)))
+ForEquation.ebnf(
+    syntax = Literal("for") + ForIndices.ebnf().setResultsName("indices") + Literal("loop") + ZeroOrMore( Equation.ebnf() + Literal(";").suppress()).setResultsName("equations") + Literal("end") + Literal("for"),
+    action = lambda s, l, t: ForEquation(**dict(t))
+    )
+
+ForStatement.ebnf( 
+    syntax =  Literal("for") + ForIndices.ebnf().setResultsName("indices") + Literal("loop") + ZeroOrMore( Statement.ebnf() + Literal(";").suppress()).setResultsName("statements") + Literal("end") + Literal("for"),
+    action = lambda s, l, t: ForStatement(**dict(t))
+    )
+
+ForIndices.ebnf(
+    syntax = ForIndex.ebnf + ZeroOrMore(Literal(",").suppress() + ForIndex.ebnf()),
+    action = lambda s,l,t: ForIndices(t)
+    )
+
+ForIndex.ebnf(
+    syntax = Ident.ebnf().setResultsName("identifier"),
+    action = lambda s, l, t: ForIndex(**dict(t))
+    )
+

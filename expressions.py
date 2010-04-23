@@ -6,12 +6,6 @@ from pyparsing import Literal
 from tokens import String, Ident
 
 class Name(BaseModelica):
-    # EBNF Section
-    __ebnf__ = Ident.__ebnf__ + ZeroOrMore(Literal(".").suppress() + Ident.__ebnf__)
-    __ebnf__ = __ebnf__.setParseAction(lambda s, l, t: Name(list(t)))
-
-    # Internal data
-    names = []
 
     def __init__(self, names):
         self.names = names
@@ -23,12 +17,6 @@ class ClassModification(BaseModelica):
     __ebnf__ = Literal("1")
 
 class StringComment(BaseModelica):
-    # EBNF Section
-    __ebnf__ = String.__ebnf__ + ZeroOrMore(Literal("+").suppress() + String.__ebnf__)
-    __ebnf__ = __ebnf__.setParseAction(lambda s, l, t: StringComment(t))
-
-    # Internal data
-    comments = []
 
     def __init__(self, comments):
         self.comments = comments
@@ -36,18 +24,11 @@ class StringComment(BaseModelica):
     def dump(self, indent = 0):
         return " + ".join(map(str, self.comments))
 
-
-
 class Annotation(BaseModelica):
     __ebnf__ = Literal("annotation") + ClassModification.__ebnf__
 
 
-
 class Comment(BaseModelica):
-    #EBNF Section
-    __ebnf__ = StringComment.__ebnf__.setResultsName("comment") + Optional(Annotation.__ebnf__).setResultsName("annotation")
-    __ebnf__ = __ebnf__.setParseAction(lambda s, l, t: Comment(**dict(t)))
-
     # Internal data
     def __init__(self, comment, annotation = None):
         self.comment = comment
@@ -60,8 +41,6 @@ class Comment(BaseModelica):
             s += " %s"%(self.annotation)
 
         return s
-        
-
 
 class Expression(BaseModelica):
     def __init__(self, identifier):
@@ -78,10 +57,22 @@ class ComponentReference(BaseModelica):
     def dump(self, indent = 0):
         return str(self.identifier)
 
+StringComment.ebnf(
+    syntax = Ident.ebnf() + ZeroOrMore(Literal(".").suppress() + Ident.ebnf()),
+    action = lambda s, l, t: Name(list(t))
+    )
+
 Expression.ebnf(
-    Ident.ebnf().setResultsName("identifier")
-).setParseAction(lambda s,l,t: Expression(**dict(t)))
+    syntax = Ident.ebnf().setResultsName("identifier"),
+    action = lambda s,l,t: Expression(**dict(t))
+    )
 
 ComponentReference.ebnf(
-    Ident.ebnf().setResultsName("identifier")
-).setParseAction(lambda s,l,t: ComponentReference(**dict(t)))
+    syntax = Ident.ebnf().setResultsName("identifier"),
+    action = lambda s,l,t: ComponentReference(**dict(t))
+    )
+
+Comment.ebnf(
+    syntax = StringComment.ebnf().setResultsName("comment") + Optional(Annotation.ebnf()).setResultsName("annotation"),
+    action = lambda s, l, t: Comment(**dict(t))
+    )
