@@ -1,5 +1,5 @@
 from pyparsing import Optional, Literal, ZeroOrMore, Forward
-from base import BaseModelica
+from base import BaseModelica, presenceBool
 from expressions import Expression, ComponentReference
 
 from tokens import Ident
@@ -235,17 +235,6 @@ class Equation(BaseModelica):
 
 
 class EquationSection(BaseModelica):
-    __ebnf__ = (Optional(Literal("initial").setParseAction(lambda s, l, t: [True]).setResultsName("initial")) + Literal("equation") + ZeroOrMore(Equation.__ebnf__ + Literal(";").suppress()).setResultsName("equations"))
-
-    # Define parse action
-    __ebnf__ = __ebnf__.setParseAction(
-        lambda s, l, t: EquationSection(
-            **dict(
-                initial = t['initial'],
-                equations = list(t['equations'])
-                )
-              )
-        )
 
     def __init__(self, initial = False, equations = []):
         self.initial = initial
@@ -260,6 +249,10 @@ class EquationSection(BaseModelica):
 
         return msg
 
+EquationSection.ebnf(
+    syntax = (Optional(presenceBool(Literal("initial"))("initial")) + Literal("equation") + ZeroOrMore(Equation.ebnf() + Supress(";"))("equations")),
+    action = lambda s, l, t: EquationSection( initial = t['initial'], equations = list(t['equations']))
+    )
 
 WhenEquation.ebnf(
     syntax = Literal("when") + Expression.ebnf().setResultsName("expression") + Literal("then") + ZeroOrMore(Equation.ebnf() + Literal(";").suppress()).setResultsName("equations") + Optional( Literal("elsewhen") + Expression.ebnf().setResultsName("expression_else") + Literal("then") + ZeroOrMore(Equation.ebnf() + Literal(";").suppress()).setResultsName("statements_else")) + Literal("end") + Literal("when"),

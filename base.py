@@ -53,3 +53,6 @@ class BaseModelica(object):
 
         return self.__ebnf__
 
+
+def presenceBool(syntax):
+    return syntax.setParseAction(lambda s,l,t:True)
