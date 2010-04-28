@@ -56,3 +56,8 @@ class BaseModelica(object):
 
 def presenceBool(syntax):
     return syntax.setParseAction(lambda s,l,t:True)
+
+def hasLiteral(name):
+    return presenceBool(Literal(name))(name)
+
+
