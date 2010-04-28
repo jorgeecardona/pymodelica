@@ -43,10 +43,6 @@ class QIdent(BaseModelica):
         return "'" + self.value + "'"
 
 class Ident(BaseModelica):
-    __ebnf__ = Word(alphas + "_", alphanums + "_") ^ QIdent.__ebnf__
-    __ebnf__.setParseAction(lambda s, l, t: Ident(t[0]))
-
-    value = None
 
     def __init__(self, value = None):
 
@@ -125,3 +121,11 @@ class Number(BaseModelica):
 
     def __repr__(self):
         return "NUMBER: %s"%str(self)
+
+
+Ident.ebnf(
+    syntax = Word(alphas + "_", alphanums + "_") ^ QIdent.ebnf(),
+    action = lambda s, l, t: Ident(t[0])
+    )
+
+
