@@ -38,6 +38,7 @@ class BaseModelica(object):
     def __repr__(self):
         return "%s: %s"%(str(self.__class__.__name__), str(self))
 
+    @classmethod
     def ebnf(self, syntax = None, action = None):
 
         # Try to set the __ebnf__
