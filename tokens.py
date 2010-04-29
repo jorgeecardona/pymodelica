@@ -1,7 +1,7 @@
 from pyparsing import Word, nums, Literal, alphas, alphanums, QuotedString, Group
 from base import BaseModelica, IncorrectValue, NonImplemented
 
-from pyparsing import CharsNotIn, Combine, OneOrMore, ZeroOrMore, Optional
+from pyparsing import CharsNotIn, Combine, OneOrMore, ZeroOrMore, Optional, Suppress
 from pyparsing import nums, alphas, alphanums, printables
 
 from string import printable
@@ -29,9 +29,6 @@ def escape(string):
         .replace(chr(9),"\\t")
 
 class QIdent(BaseModelica):
-    __ebnf__ = (Literal("'") + Combine(OneOrMore(CharsNotIn("\\'") ^ s_escape )) + Literal("'")).setParseAction(lambda s, l, t: QIdent(t[1]))
-
-    value = None
 
     def __init__(self, value= None):
         if type(value) is str:
@@ -53,7 +50,6 @@ class Ident(BaseModelica):
             self.value = value.dump()
 
         else:
-            print value
             raise IncorrectValue("Non-string or QIdent passed.")
 
     def dump(self, indent = 0):
@@ -64,11 +60,6 @@ class Ident(BaseModelica):
 
 
 class String(BaseModelica):
-    __ebnf__ = (Literal('"') + Combine(ZeroOrMore(CharsNotIn("\\\"") ^ s_escape )) + Literal('"')).setParseAction(lambda s, l, t: String(
-            t[1]
-            ))
-
-    value = None
 
     def __init__(self, value= None):
         # Receive a string with the escaping elements.
@@ -80,8 +71,7 @@ class String(BaseModelica):
 
     def dump(self):
         return '"' + escape(self.value) + '"'
-
-    
+                
 class Integer(BaseModelica):
     __ebnf__ = Word(nums).setParseAction(lambda s, l, t: Integer(t[0]))
     
@@ -125,7 +115,26 @@ class Number(BaseModelica):
 
 Ident.ebnf(
     syntax = Word(alphas + "_", alphanums + "_") ^ QIdent.ebnf(),
+
     action = lambda s, l, t: Ident(t[0])
     )
 
+QIdent.ebnf(
+    syntax = (
+        Suppress("'") + 
+        Combine(OneOrMore(CharsNotIn("\\'") ^ s_escape )) + 
+        Suppress("'")
+        ),
 
+    action = lambda s, l, t: QIdent(t[0])
+    )
+
+String.ebnf(
+    syntax = (
+        Suppress('"') + 
+        Combine(ZeroOrMore(CharsNotIn("\\\"") ^ s_escape )) +
+        Suppress('"')
+        ),
+    
+    action = lambda s, l, t: String(t[0])
+    )
