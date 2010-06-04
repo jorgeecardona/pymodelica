@@ -61,8 +61,6 @@ class testTokens(unittest.TestCase):
 
         self.assertRaises(Exception, lambda: QIDENT("' algo asi "))
 
-
-
 class testTokensDumps(unittest.TestCase):
     def setUp(self):
         pass

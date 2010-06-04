@@ -139,8 +139,10 @@
 #         ).setParseAction(lambda s,l,t: Number(**dict(t)))
 
 #     syntax = 
-
-from pyparsing import Word, nums, alphas, Suppress, OneOrMore, CharsNotIn
+from string import printable
+from decimal import Decimal
+from pyparsing import nums, alphas, alphanums
+from pyparsing import Word, Literal, Suppress, OneOrMore, CharsNotIn, Combine, Optional
 from base import BaseModelica as ModelicaBase
 
 class IDENT(ModelicaBase):
@@ -155,45 +157,67 @@ class IDENT(ModelicaBase):
     def dump(self):
         return "%s" % (self.value)
 
+
 class QIDENT(ModelicaBase):
     def __init__(self, value):
+        print value
         if isinstance(value, (unicode, str)):
-            if (value[0] == value[-1] == "'"):
-                self.value = unicode(value[1:-1])
-                return
+            self.value = unicode(value)
+            return
 
         raise Exception("Non string value")
 
     def dump(self):
         return "'%s'" % (self.value)
+
             
+class STRING(ModelicaBase):
+    def __init__(self, value):
+        if isinstance(value, (str, unicode)):
+            self.value = value
+            return
 
-class NONDIGIT:
-    pass
+        raise Exception("Non string value")
 
-class STRING:
-    pass
+    def dump(self):
+        return "\"%s\"" % (self.value)
 
-class SCHAR:
-    pass
+    def unescape(self):
+        return self.value\
+            .replace("\\\"","\"")\
+            .replace("\\'","'")\
+            .replace("\\\\", "\\")\
+            .replace("\\r", chr(13))\
+            .replace("\\n", chr(10))\
+            .replace("\\t", chr(9))
 
-class QCHAR:
-    pass
 
-class SESCAPE:
-    pass
+class UNSIGNED_INTEGER(ModelicaBase):
+    def __init__(self, value):
+        self.value = Decimal(value)
 
-class DIGIT:
-    pass
+    def dump(self):
+        return "%s" % (self.value)
 
-class UNSIGNED_INTEGER:
-    pass
-
-class UNSIGNED_NUMBER:
-    pass
+class UNSIGNED_NUMBER(ModelicaBase):
+    def __init__(self, mantissa="0", exponent_sign = "+", exponent = "0"):
+        self.mantissa = Decimal(manissa)
+        self.exponent = Decimal(exponent)
+        if exponent_sign is "-":
+            self.exponent = -self.exponent
+        
+    def dump(self):
+        exponent = ("e%s" % (self.exponent)) if self.exponent != 0 else ""
+        return "%s%s" % (self.mantissa, exponent)
 
 NONDIGIT = alphas + '_'
 DIGIT = nums
+SCHAR = CharsNotIn("\\\"")
+QCHAR = Word(alphanums + "!#$%&()*+,-./:;<>=?@[]^{}|~ ")
+SESCAPE = Literal("\\'") ^ Literal("\\\"") ^ Literal("\\?") ^\
+    Literal("\\") ^ Literal("\\a") ^ Literal("\\b") ^\
+    Literal("\\f") ^ Literal("\\n") ^ Literal("\\r") ^\
+    Literal("\\t") ^ Literal("\\v")
 
 IDENT.ebnf(
     syntax=Word(NONDIGIT , DIGIT + NONDIGIT) ^ QIDENT.ebnf(),
@@ -201,8 +225,22 @@ IDENT.ebnf(
     )
 
 QIDENT.ebnf(
-    syntax=Suppress("'") + OneOrMore(CharsNotIn('\\"')) + Suppress("'"),
+    syntax=Suppress("'") + OneOrMore(QCHAR ^ SESCAPE) + Suppress("'"),
     action=lambda s,l,t: QIDENT(t[0])
     )
 
-# EBNF Syntax and action
+STRING.ebnf(
+    syntax=Suppress('"') + Combine(OneOrMore(SCHAR ^ SESCAPE)) + Suppress('"'),
+    action=lambda s,l,t: QIDENT(t[0])
+    )
+
+UNSIGNED_INTEGER.ebnf(
+    syntax=Word(nums),
+    action=lambda s,l,t: UNSIGNED_INTEGER(t[0])
+    )
+
+UNSIGNED_NUMBER.ebnf(
+    syntax = \
+        Combine(UNSIGNED_INTEGER.ebnf() + Optional(Literal(".") + Optional(UNSIGNED_INTEGER.ebnf()))).setResultsName("mantissa") + Optional((Literal("e") ^ Literal("E")) + Optional(Literal("+") ^ Literal("-")).setResultsName('exponent_sign') + UNSIGNED_INTEGER.ebnf().setResultsName('exponent')),
+    action=lambda s,l,t: Number(**dict(t))
+    )
