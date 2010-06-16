@@ -1,4 +1,4 @@
-from base import BaseModelica, IncorrectValue, NonImplemented
+from base import ModelicaBase, IncorrectValue, NonImplemented
 
 from pyparsing import CharsNotIn, Combine, OneOrMore, ZeroOrMore, Optional, Forward
 from pyparsing import Literal, delimitedList
@@ -6,53 +6,53 @@ from pyparsing import Literal, delimitedList
 from tokens import String, Ident
 
 
-class Expression(BaseModelica):
+class Expression(ModelicaBase):
     def __init__(self, identifier):
         self.identifier = identifier
 
     def dump(self, indent = 0):
         return str(self.identifier)
 
-class Expression(BaseModelica):
+class Expression(ModelicaBase):
     pass
 
-class SipleExpression(BaseModelica):
+class SipleExpression(ModelicaBase):
     pass
 
-class LogicalExpression(BaseModelica):
+class LogicalExpression(ModelicaBase):
     pass
 
-class LogicalTerm(BaseModelica):
+class LogicalTerm(ModelicaBase):
     pass
 
-class LogicalFactor(BaseModelica):
+class LogicalFactor(ModelicaBase):
     pass
 
-class Relation(BaseModelica):
+class Relation(ModelicaBase):
     pass
 
-class RelOp(BaseModelica):
+class RelOp(ModelicaBase):
     pass
 
-class ArithmeticExpresion(BaseModelica):
+class ArithmeticExpresion(ModelicaBase):
     pass
 
-class AddOp(BaseModelica):
+class AddOp(ModelicaBase):
     pass
 
-class Term(BaseModelica):
+class Term(ModelicaBase):
     pass
 
-class MulOp(BaseModelica):
+class MulOp(ModelicaBase):
     pass
 
-class Factor(BaseModelica):
+class Factor(ModelicaBase):
     pass
 
-class Primary(BaseModelica):
+class Primary(ModelicaBase):
     pass
 
-class Name(BaseModelica):
+class Name(ModelicaBase):
 
     def __init__(self, names):
         self.names = names
@@ -60,38 +60,38 @@ class Name(BaseModelica):
     def dump(self):
         return ".".join(map(str, self.names))
 
-class ComponentReference(BaseModelica):
+class ComponentReference(ModelicaBase):
     def __init__(self, identifier):
         self.identifier = identifier
 
     def dump(self, indent = 0):
         return str(self.identifier)
 
-class FunctionCallArgs(BaseModelica):
+class FunctionCallArgs(ModelicaBase):
     pass
 
-class FunctionArguments(BaseModelica):
+class FunctionArguments(ModelicaBase):
     pass
 
-class NamedArguments(BaseModelica):
+class NamedArguments(ModelicaBase):
     pass
 
-class NamedArgument(BaseModelica):
+class NamedArgument(ModelicaBase):
     pass
 
-class OutputExpressionList(BaseModelica):
+class OutputExpressionList(ModelicaBase):
     pass
 
-class ExpressionList(BaseModelica):
+class ExpressionList(ModelicaBase):
     pass
 
-class ArraySubscripts(BaseModelica):
+class ArraySubscripts(ModelicaBase):
     pass
 
-class Subscript(BaseModelica):
+class Subscript(ModelicaBase):
     pass
 
-class Comment(BaseModelica):
+class Comment(ModelicaBase):
     # Internal data
     def __init__(self, comment, annotation = None):
         self.comment = comment
@@ -105,7 +105,7 @@ class Comment(BaseModelica):
 
         return s
 
-class StringComment(BaseModelica):
+class StringComment(ModelicaBase):
 
     def __init__(self, comments):
         self.comments = comments
@@ -113,10 +113,14 @@ class StringComment(BaseModelica):
     def dump(self, indent = 0):
         return " + ".join(map(str, self.comments))
 
-class Annotation(BaseModelica):
-    pass
+class Annotation(ModelicaBase):
+    def __init__(self, modification):
+        self.modification = modification
 
-class ClassModification(BaseModelica):
+    def dump(self):
+        return "annotation %s" % (self.modification)
+
+class ClassModification(ModelicaBase):
     __ebnf__ = Literal("1")
 
 
@@ -147,5 +151,5 @@ StringComment.ebnf(
 
 Annotation.ebnf(
     syntax = Literal("annotation") + ClassModification.ebnf()('modification'),
-    action = lambda s,l,t: Annotation(t['modification'])
+    action = lambda s,l,t: Annotation(**dict(t))
     )
