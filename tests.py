@@ -12,19 +12,20 @@ class testTokensLoad(unittest.TestCase):
         self.assertTrue(IDENT.load("Algo").value == "Algo")
         self.assertTrue(IDENT.load("_algo").value == "_algo")
         self.assertTrue(IDENT.load("  _algo  ").value == "_algo")
-        self.assertTrue(IDENT.load("  'algo'  ").value == "'algo'")
+        self.assertTrue(IDENT.load("  'algo'  ").value == QIDENT("algo"))
 
         self.assertRaises(ParseError, lambda: IDENT.load("1algo"))
 
 
     def test_qident(self):
-        self.assertTrue(IDENT.load("'algoas'").value == "'algoas'")
+        self.assertTrue(IDENT.load("'algoas'").value == QIDENT("algoas"))
 
 
     def test_string(self):
         self.assertTrue(STRING.load(""" "algo" """).value == "algo")
         self.assertTrue(STRING.load(""" "algo y algo" """).value == "algo y algo")
-        self.assertTrue(STRING.load(""" "algo es \\"algo\\"" """).value == '''algo es "algo"''')
+        self.assertTrue(STRING.load(""" "algo es \\"algo\\"" """).value == '''algo es \\"algo\\"''')
+        self.assertTrue(STRING.load(""" "algo es \\"algo\\"" """).unescape() == '''algo es "algo"''')
         
     def test_integer(self):
         self.assertTrue(UNSIGNED_INTEGER.load(" 123     ").value == 123)
@@ -59,7 +60,6 @@ class testTokens(unittest.TestCase):
         self.assertTrue(isinstance(QIDENT("'_algo'"), QIDENT))
         self.assertTrue(isinstance(QIDENT("'Algo'"), QIDENT))
 
-        self.assertRaises(Exception, lambda: QIDENT("' algo asi "))
 
 class testTokensDumps(unittest.TestCase):
     def setUp(self):

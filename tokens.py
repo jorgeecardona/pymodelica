@@ -148,28 +148,63 @@ from base import BaseModelica as ModelicaBase
 class IDENT(ModelicaBase):
     def __init__(self, value):
         if isinstance(value, (unicode, str)):
-            if value == value.strip():
-                self.value = unicode(value)
-                return
-            
-        raise Exception("Non string value")
+            if value.strip() != value:
+                raise Exception("White spaces")
+            self.value = unicode(value)
+        elif isinstance(value, QIDENT):
+            self.value = value
+        else:
+            raise Exception("Non string value")
 
     def dump(self):
         return "%s" % (self.value)
 
+    def __lt__(self, o):
+        return self.value < o.value
+
+    def __le__(self, o):
+        return self.value <= o.value
+
+    def __gt__(self, o):
+        return self.value > o.value
+
+    def __ge__(self, o):
+        return self.value >= o.value
+
+    def __eq__(self, o):
+        return self.value == o.value
+
+    def __ne__(self, o):
+        return self.value != o.value
 
 class QIDENT(ModelicaBase):
     def __init__(self, value):
-        print value
         if isinstance(value, (unicode, str)):
+            
             self.value = unicode(value)
-            return
-
-        raise Exception("Non string value")
+        else:
+            raise Exception("Non string value")
 
     def dump(self):
         return "'%s'" % (self.value)
 
+    def __lt__(self, o):
+        return self.value < o.value
+
+    def __le__(self, o):
+        return self.value <= o.value
+
+    def __gt__(self, o):
+        return self.value > o.value
+
+    def __ge__(self, o):
+        return self.value >= o.value
+
+    def __eq__(self, o):
+        return self.value == o.value
+
+    def __ne__(self, o):
+        return self.value != o.value
             
 class STRING(ModelicaBase):
     def __init__(self, value):
@@ -183,13 +218,14 @@ class STRING(ModelicaBase):
         return "\"%s\"" % (self.value)
 
     def unescape(self):
-        return self.value\
-            .replace("\\\"","\"")\
-            .replace("\\'","'")\
-            .replace("\\\\", "\\")\
-            .replace("\\r", chr(13))\
-            .replace("\\n", chr(10))\
-            .replace("\\t", chr(9))
+        val = self.value
+        val = val.replace("\\\"", "\"")
+        val = val.replace("\\'", "'")
+        val = val.replace("\\\\", "\\")
+        val = val.replace("\\r", chr(13))
+        val = val.replace("\\n", chr(10))
+        val = val.replace("\\t", chr(9))        
+        return val
 
 
 class UNSIGNED_INTEGER(ModelicaBase):
@@ -201,7 +237,7 @@ class UNSIGNED_INTEGER(ModelicaBase):
 
 class UNSIGNED_NUMBER(ModelicaBase):
     def __init__(self, mantissa="0", exponent_sign = "+", exponent = "0"):
-        self.mantissa = Decimal(manissa)
+        self.mantissa = Decimal(mantissa)
         self.exponent = Decimal(exponent)
         if exponent_sign is "-":
             self.exponent = -self.exponent
@@ -231,7 +267,7 @@ QIDENT.ebnf(
 
 STRING.ebnf(
     syntax=Suppress('"') + Combine(OneOrMore(SCHAR ^ SESCAPE)) + Suppress('"'),
-    action=lambda s,l,t: QIDENT(t[0])
+    action=lambda s,l,t: STRING(t[0])
     )
 
 UNSIGNED_INTEGER.ebnf(
@@ -240,7 +276,15 @@ UNSIGNED_INTEGER.ebnf(
     )
 
 UNSIGNED_NUMBER.ebnf(
-    syntax = \
-        Combine(UNSIGNED_INTEGER.ebnf() + Optional(Literal(".") + Optional(UNSIGNED_INTEGER.ebnf()))).setResultsName("mantissa") + Optional((Literal("e") ^ Literal("E")) + Optional(Literal("+") ^ Literal("-")).setResultsName('exponent_sign') + UNSIGNED_INTEGER.ebnf().setResultsName('exponent')),
-    action=lambda s,l,t: Number(**dict(t))
+    syntax = Combine(
+        UNSIGNED_INTEGER.ebnf() + Optional(
+            Literal(".") + Optional(
+                UNSIGNED_INTEGER.ebnf()
+                )
+            )
+        ).setResultsName("mantissa") + Optional(
+        (Literal("e") ^ Literal("E")) + Optional(
+            Literal("+") ^ Literal("-")
+            ).setResultsName('exponent_sign') + Combine(UNSIGNED_INTEGER.ebnf()).setResultsName('exponent')),
+    action=lambda s,l,t: UNSIGNED_NUMBER(**dict(t))
     )
