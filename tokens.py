@@ -3,7 +3,7 @@ from decimal import Decimal
 from pyparsing import nums, alphas, alphanums
 from pyparsing import Word, Literal, Suppress, OneOrMore, CharsNotIn, Combine, Optional
 
-from base import BaseModelica as ModelicaBase
+from base import ModelicaBase
 
 class IDENT(ModelicaBase):
     def __init__(self, value):
@@ -32,6 +32,8 @@ class IDENT(ModelicaBase):
         return self.value >= o.value
 
     def __eq__(self, o):
+        if not isinstance(o, type(self)):
+            return False
         return self.value == o.value
 
     def __ne__(self, o):
@@ -61,6 +63,8 @@ class QIDENT(ModelicaBase):
         return self.value >= o.value
 
     def __eq__(self, o):
+        if not isinstance(o, type(self)):
+            return False
         return self.value == o.value
 
     def __ne__(self, o):

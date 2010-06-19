@@ -1,9 +1,9 @@
 from base import ModelicaBase, IncorrectValue, NonImplemented
 
-from pyparsing import CharsNotIn, Combine, OneOrMore, ZeroOrMore, Optional, Forward
-from pyparsing import Literal, delimitedList
+from pyparsing import CharsNotIn, Combine, OneOrMore, ZeroOrMore, Optional, Forward, Suppress
+from pyparsing import Literal, delimitedList, Or, ParseExpression, ParserElement
 
-from tokens import String, Ident
+from tokens import STRING, IDENT
 
 
 class Expression(ModelicaBase):
@@ -12,9 +12,6 @@ class Expression(ModelicaBase):
 
     def dump(self, indent = 0):
         return str(self.identifier)
-
-class Expression(ModelicaBase):
-    pass
 
 class SipleExpression(ModelicaBase):
     pass
@@ -53,7 +50,6 @@ class Primary(ModelicaBase):
     pass
 
 class Name(ModelicaBase):
-
     def __init__(self, names):
         self.names = names
 
@@ -89,7 +85,16 @@ class ArraySubscripts(ModelicaBase):
     pass
 
 class Subscript(ModelicaBase):
-    pass
+    def __init__(self, expression=None):
+        self.expression = expression
+
+    def dump(self):
+        if self.expression is None:
+            msg = ":"
+        else:
+            msg = "%s" % (self.expression)
+
+        return msg
 
 class Comment(ModelicaBase):
     # Internal data
@@ -101,13 +106,14 @@ class Comment(ModelicaBase):
         s = str(self.comment)
 
         if hasattr(self, 'annotation'):
-            s += " %s"%(self.annotation)
+            if isinstance(self.annotation, Annotation):
+                s += " %s"%(self.annotation)
 
         return s
 
 class StringComment(ModelicaBase):
 
-    def __init__(self, comments):
+    def __init__(self, *comments):
         self.comments = comments
         
     def dump(self, indent = 0):
@@ -124,32 +130,38 @@ class ClassModification(ModelicaBase):
     __ebnf__ = Literal("1")
 
 
-StringComment.ebnf(
-    syntax = Ident.ebnf() + ZeroOrMore(Literal(".").suppress() + Ident.ebnf()),
-    action = lambda s, l, t: Name(list(t))
-    )
+#StringComment.ebnf(
+#    syntax = IDENT.ebnf() + ZeroOrMore(Literal(".").suppress() + IDENT.ebnf()),
+#    action = lambda s, l, t: Name(list(t))
+#    )
+
 
 Expression.ebnf(
-    syntax = Ident.ebnf()("identifier"),
+    syntax = IDENT.name("identifier"),
     action = lambda s,l,t: Expression(**dict(t))
     )
 
+Subscript.ebnf(
+    syntax = Suppress(":") ^ Expression.name("expression"),
+    action = lambda s,l,t: Subscript(**dict(t))
+    )
+
 ComponentReference.ebnf(
-    syntax = Ident.ebnf()("identifier"),
+    syntax = IDENT.name("identifier"),
     action = lambda s,l,t: ComponentReference(**dict(t))
     )
 
 Comment.ebnf(
-    syntax = StringComment.ebnf()("comment") + Optional(Annotation.ebnf())("annotation"),
+    syntax = StringComment.name("comment") + Optional(Annotation.name("annotation")),
     action = lambda s, l, t: Comment(**dict(t))
     )
 
 StringComment.ebnf(
-    syntax = Optional(delimitedList(String.ebnf(), delim="+")),
-    action = lambda s,l,t: StringComment(list(t))
+    syntax = delimitedList(STRING.ebnf(), delim="+"),
+    action = lambda s,l,t: StringComment(*list(t))
     )
 
 Annotation.ebnf(
-    syntax = Literal("annotation") + ClassModification.ebnf()('modification'),
+    syntax = Literal("annotation") + ClassModification.name('modification'),
     action = lambda s,l,t: Annotation(**dict(t))
     )

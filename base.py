@@ -1,4 +1,4 @@
-from pyparsing import Forward
+from pyparsing import Forward, Or
 
 class NonImplemented(Exception):
     pass
@@ -9,10 +9,10 @@ class IncorrectValue(Exception):
 class ParseError(Exception):
     pass
 
-class BaseModelica(object):
+class ModelicaBase(object):
     """
-    BaseModelica
-    ============
+    Modelica Base Class
+    ===================
 
     This class is the base of all modelica entities. It has two methods:
 
@@ -53,6 +53,10 @@ class BaseModelica(object):
             self.__ebnf__ = self.__ebnf__.setParseAction(action)
 
         return self.__ebnf__
+
+    @classmethod
+    def name(cls, name):
+        return Or(cls.ebnf()).setResultsName(name)
 
 
 def presenceBool(syntax):
