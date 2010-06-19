@@ -82,7 +82,11 @@ class ExpressionList(ModelicaBase):
     pass
 
 class ArraySubscripts(ModelicaBase):
-    pass
+    def __init__(self, *subscripts):
+        self.subscripts = subscripts
+        
+    def dump(self, indent = 0):
+        return "[%s]" % (", ".join(map(str, self.subscripts)))
 
 class Subscript(ModelicaBase):
     def __init__(self, expression=None):
@@ -130,15 +134,15 @@ class ClassModification(ModelicaBase):
     __ebnf__ = Literal("1")
 
 
-#StringComment.ebnf(
-#    syntax = IDENT.ebnf() + ZeroOrMore(Literal(".").suppress() + IDENT.ebnf()),
-#    action = lambda s, l, t: Name(list(t))
-#    )
-
 
 Expression.ebnf(
     syntax = IDENT.name("identifier"),
     action = lambda s,l,t: Expression(**dict(t))
+    )
+
+ArraySubscripts.ebnf(
+    syntax = Suppress("[") + delimitedList(Subscript.ebnf(), delim=",") + Suppress("]"),
+    action = lambda s,l,t: ArraySubscripts(*list(t))
     )
 
 Subscript.ebnf(

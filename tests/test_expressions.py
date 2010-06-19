@@ -1,6 +1,6 @@
 import unittest
 
-from expressions import Annotation, StringComment, Comment, Subscript
+from expressions import Annotation, StringComment, Comment, Subscript, ArraySubscripts
 
 class testExpressions(unittest.TestCase):
     def setUp(self):
@@ -30,6 +30,16 @@ class testExpressions(unittest.TestCase):
 
         subscript = Subscript.load("i")
         self.assertEqual(subscript.dump(), "i")
+
+    def test_array_subscripts(self):
+        array_subscripts = ArraySubscripts.load("[:]")
+        self.assertEqual(array_subscripts.dump(), "[:]")
+
+        array_subscripts = ArraySubscripts.load("[i]")
+        self.assertEqual(array_subscripts.dump(), "[i]")
+
+        array_subscripts = ArraySubscripts.load("[i,j,k]")
+        self.assertEqual(array_subscripts.dump(), "[i, j, k]")
 
 
 if __name__ == '__main__':
