@@ -1,7 +1,7 @@
 from base import ModelicaBase, IncorrectValue, NonImplemented, hasLiteral
 
 from pyparsing import CharsNotIn, Combine, OneOrMore, ZeroOrMore, Optional, Forward, Suppress
-from pyparsing import Literal, delimitedList, Or, ParseExpression, ParserElement
+from pyparsing import Literal, delimitedList, Or, ParseExpression, ParserElement, matchPreviousExpr
 
 from tokens import STRING, IDENT
 #from equations import ForIndices
@@ -387,12 +387,13 @@ Operator.ebnf(
         )
     )
 
+class_name = IDENT.name('class_name')
 ClassSpecifier.ebnf(
     syntax = Or(
         (
-            IDENT.name('class_name') + StringComment.name('comment') + 
+            class_name + StringComment.name('comment') + 
             Composition.name('composition') + 
-            Suppress('end') + IDENT.name('class_name')
+            Suppress('end') + matchPreviousExpr(class_name)
             ),
         (
             IDENT.name('class_name') + Suppress('=') + 
