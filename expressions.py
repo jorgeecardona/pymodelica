@@ -443,19 +443,31 @@ FunctionCallArgs.ebnf(
     )
 
 FunctionArguments.ebnf(
-    syntax = Or([
-            NamedArguments.name('arguments'),
-            Expression.name('for_expression') + Suppress('for') + ForIndices.name('for_indices'),
-            ExpressionList.name('expressions'),
-            ExpressionList.name('expressions') + Suppress(',') + NamedArguments.name('arguments'),
-            ExpressionList.name('expressions') + Suppress(',') + 
-            Expression.name('for_expression') + Suppress('for') + ForIndices.name('for_indices')
-            ])
+    syntax = (
+        ExpressionList.name('expressions') + Optional(Suppress(',') + (
+                (Expression.name('expression') + Suppress('for') + ForIndices.name('for_indices')) ^
+                (NamedArguments.name('arguments'))))
+        ) ^ (
+        NamedArguments.name('arguments')
+        ) ^ (
+        Expression.name('for_expression') + Suppress('for') + ForIndices.name('for_indices')
+        )
     
-#    syntax = Or(
-#        Expression.name('expression') + Optional(Or(Suppress(',') + FunctionArguments.name("arguments"), Suppress('for') + ForIndices.name('for_indices'))), 
-#        NamedArguments.name('arguments')
-#        )
+    # syntax = Optional(ExpressionList.name('expressions')) + Or(
+    #     [
+    #         NamedArguments.name('arguments'),
+    #         Expression.name('for_expression') + Suppress('for') + ForIndices.name('for_indices'),
+    #         Suppress(',') + NamedArguments.name('arguments'),
+    #         Suppress(',') + 
+    #         Expression.name('for_expression') + Suppress('for') + ForIndices.name('for_indices')
+    #         ]
+    #     )
+
+    
+    #    syntax = Or(
+    #        Expression.name('expression') + Optional(Or(Suppress(',') + FunctionArguments.name("arguments"), Suppress('for') + ForIndices.name('for_indices'))), 
+    #        NamedArguments.name('arguments')
+    #        )
     )
 
 Expression.ebnf(
