@@ -1,6 +1,6 @@
 import unittest
 
-from expressions import Annotation, StringComment, Comment, Subscript, ArraySubscripts
+from expressions import Annotation, StringComment, Comment, Subscript, ArraySubscripts, ExpressionList, OutputExpressionList, NamedArgument, NamedArguments
 
 class testExpressions(unittest.TestCase):
     def setUp(self):
@@ -41,6 +41,53 @@ class testExpressions(unittest.TestCase):
         array_subscripts = ArraySubscripts.load("[i,j,k]")
         self.assertEqual(array_subscripts.dump(), "[i, j, k]")
 
+    def test_expression_list(self):
+        expression_list = ExpressionList.load("i")
+        self.assertEqual(expression_list.dump(), "i")
+
+        expression_list = ExpressionList.load("i,  j")
+        self.assertEqual(expression_list.dump(), "i, j")
+
+        expression_list = ExpressionList.load(" i  ,  j   ,   k ")
+        self.assertEqual(expression_list.dump(), "i, j, k")
+
+    def test_output_expression_list(self):
+        output_expression_list = OutputExpressionList.load("i")
+        self.assertEqual(output_expression_list.dump(), "i")
+
+        output_expression_list = OutputExpressionList.load("i,  j")
+        self.assertEqual(output_expression_list.dump(), "i, j")
+
+        output_expression_list = OutputExpressionList.load(" i  ,  j   ,   k ")
+        self.assertEqual(output_expression_list.dump(), "i, j, k")
+
+    def test_named_argument(self):
+        named_argument = NamedArgument.load("algo   =   i")
+        self.assertEqual(named_argument.dump(), "algo = i")
+
+
+    def test_named_arguments(self):
+        named_arguments = NamedArguments.load("algo   =   i")
+        self.assertEqual(named_arguments.dump(), "algo = i")
+        
+        named_arguments = NamedArguments.load("algo   =   i, otro   =  j")
+        self.assertEqual(named_arguments.dump(), "algo = i, otro = j")
+
+    def test_function_arguments(self):
+        function_arguments = FunctionArguments.load("i")
+        self.assertEqual(function_arguments.dump(), "i")
+
+        function_arguments = FunctionArguments.load("i, i")
+        self.assertEqual(function_arguments.dump(), "i, i")
+
+        function_arguments = FunctionArguments.load("i for i in j")
+        self.assertEqual(function_arguments.dump(), "i for i in j")
+
+        function_arguments = FunctionArguments.load("algo = i")
+        self.assertEqual(function_arguments.dump(), "algo = i")
+
+    
+        
 
 if __name__ == '__main__':
     unittest.main()

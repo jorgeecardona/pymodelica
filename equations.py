@@ -1,10 +1,10 @@
-from pyparsing import Optional, Literal, ZeroOrMore, Forward
-from base import BaseModelica, hasLiteral
 from expressions import Expression, ComponentReference
+from pyparsing import Optional, Literal, ZeroOrMore, Forward, Suppress, delimitedList
 
-from tokens import Ident
+from tokens import IDENT
+from base import ModelicaBase, hasLiteral
 
-class EquationSection(BaseModelica):
+class EquationSection(ModelicaBase):
     def __init__(self, initial = False, equations = []):
         self.initial = initial
         self.equations = equations
@@ -18,7 +18,7 @@ class EquationSection(BaseModelica):
 
         return msg
 
-class AlgorithmSection(BaseModelica):
+class AlgorithmSection(ModelicaBase):
     def __init__(self, initial = False, algorithms = []):
         self.initial = initial
         self.algorithms = algorithms
@@ -32,14 +32,14 @@ class AlgorithmSection(BaseModelica):
 
         return msg
 
-class Equation(BaseModelica):
+class Equation(ModelicaBase):
     __ebnf__ = Literal("ja").setParseAction(lambda s, l, t: Equation())
 
     def dump(self, indent = 0):
         return " " * indent + "ja"
 
 
-class Equation(BaseModelica):
+class Equation(ModelicaBase):
     def __init__(self, 
                  simple_expression = None, expression = None, 
                  if_equation = None, 
@@ -104,11 +104,26 @@ class Equation(BaseModelica):
         else:
             raise Exception("Equation without type.")
 
-class Equation(BaseModelica):
+class Equation(ModelicaBase):
     pass
         
-class Statement(BaseModelica):
+class Statement(ModelicaBase):
     pass
+
+
+class EquationArray(ModelicaBase):
+    def __init__(self, equations=[]):
+        self.equations = equations
+
+    def dump(self):
+        return ";\n".join(map(str, self.equations))
+
+class StatementArray(ModelicaBase):
+    def __init__(self, statements=[]):
+        self.statements = statements
+
+    def dump(self):
+        return ";\n".join(map(str, self.statements))
 
 class FunctionCallEquation(Equation):
     def __init__(self, identifier, args, comment = None):
@@ -206,8 +221,7 @@ class ForStatement(Statement):
         msg += "\n" + " " * indent + "end for"
         return msg
 
-class ForIndices(BaseModelica):
-    __ebnf__ = Forward()
+class ForIndices(ModelicaBase):
     def __init__(self, indices = []):
         self.indices = indices
 
@@ -215,7 +229,7 @@ class ForIndices(BaseModelica):
         return ", ".join(map(str, self.indices))
 
 
-class ForIndex(BaseModelica):
+class ForIndex(ModelicaBase):
     def __init__(self, identifier, expression = None):
         self.identifier = identifier
         self.expression = expression if isinstance(expression, Expression) else None
@@ -226,7 +240,7 @@ class ForIndex(BaseModelica):
             msg += " in %s"%(self.expression)
         return msg
 
-class WhileStatement(BaseModelica):
+class WhileStatement(ModelicaBase):
     
     def __init__(self, expression, statements = []):
         self.expression = expression
@@ -239,7 +253,7 @@ class WhileStatement(BaseModelica):
                 ) 
             return msg
 
-class WhenEquation(BaseModelica):
+class WhenEquation(ModelicaBase):
 
     def __init__(self, expression, statements = [], else_expression = None, else_statements = []):
         self.expression = expression
@@ -254,7 +268,7 @@ class WhenEquation(BaseModelica):
 
         return msg
 
-class WhenStatement(BaseModelica):
+class WhenStatement(ModelicaBase):
 
     def __init__(self, expression, equations = [], else_expression = None, else_equations = []):
         self.expression = expression
@@ -269,26 +283,18 @@ class WhenStatement(BaseModelica):
 
         return msg
 
-class ConnectClause(BaseModelica):
+class ConnectClause(ModelicaBase):
     pass
 
 
 EquationSection.ebnf(
-    syntax = (
-        Optional(hasLiteral("initial")) + Literal("equation") +
-        ZeroOrMore(Equation.ebnf() + Supress(";"))("equations")
-        ),
-    
-    action = lambda s,l,t: EquationSection(initial = t['initial'], equations = list(t['equations']))
+    syntax = Optional(hasLiteral("initial")) + Suppress("equation") + ZeroOrMore(Equation.ebnf() + Suppress(";"))('equations'),
+    action = lambda s,l,t: EquationSection(**dict(t))
     )
 
 AlgorithmSection.ebnf(
-    syntax = (
-        Optional(hasLiteral("initial")) + Literal("algorithm") +
-        ZeroOrMore(Statement.ebnf() + Supress(";"))("statements")
-        ),
-    
-    action = lambda s,l,t: EquationSection(initial = t['initial'], equations = list(t['statements']))
+    syntax = Optional(hasLiteral("initial")) + Literal("algorithm") + ZeroOrMore(Statement.ebnf() + Suppress(";"))('statements'),
+    action = lambda s,l,t: AlgorithmSection(**dict(t))
     )
 
 Equation.ebnf(
@@ -297,45 +303,49 @@ Equation.ebnf(
 Statement.ebnf(
     )
 
+EquationArray.ebnf(
+    syntax = ZeroOrMore(Equation.names('equations') + Suppress(";")),
+    action = lambda s,l,t: EquationArray(**dict(t))
+    )
+
+StatementArray.ebnf(
+    syntax = ZeroOrMore(Statement.names('statements') + Suppress(";")),
+    action = lambda s,l,t: StatementArray(**dict(t))
+    )
+
 IfEquation.ebnf(
-    syntax = (
-        Literal("if") + Expression.ebnf().setResultsName("expressions",listAllMatches=True) + Literal("then") + 
-        
-        ZeroOrMore(Equation.ebnf() + Supress(";")).setResultsName("equations",listAllMatches = True) + 
-        
-        ZeroOrMore( Literal("elseif") + Expression.ebnf().setResultsName("expressions",listAllMatches=True) + Literal("then") +
-                    ZeroOrMore(Equation.ebnf() + Supress(";")).setResultsName("equations",listAllMatches = True)) + 
-        
-        Optional(Literal("else") +
-                 ZeroOrMore(Equation.ebnf() + Supress(";")).setResultsName("equations", listAllMatches = True)) +
-        Literal("end") + Literal("if")
-        ),
-    
-    action = lambda s, l, t: IfEquation(expressions = t["expressions"], equations = t["equations"])
+    syntax =\
+        Suppress("if") + Expression.name('expressions') + Suppress('then') +\
+        ZeroOrMore(Equation.ebnf() + Suppress(";")).setResultsName('equations',listAllMatches = True) +\
+        ZeroOrMore( Suppress("elseif") + Expression.names('expressions') + Suppress('then') +
+                    ZeroOrMore(Equation.ebnf() + Suppress(";")).setResultsName('equations',listAllMatches = True)) +\
+        Optional(Literal("else") + ZeroOrMore(Equation.ebnf() + Suppress(";")).setResultsName('equations', listAllMatches = True)) +\
+        Literal('end') + Literal("if"),
+    action = lambda s, l, t: IfEquation(expressions = t['expressions'], equations = t['equations'])
     )
 
 IfStatement.ebnf(
     syntax = (
-        Literal("if") + Expression.ebnf().setResultsName("expressions",listAllMatches=True) + Literal("then") + 
+        Literal("if") + Expression.ebnf().setResultsName('expressions',listAllMatches=True) + Literal('then') + 
         
-        ZeroOrMore(Statement.ebnf() + Supress(";")).setResultsName("statements",listAllMatches = True) + 
+        ZeroOrMore(Statement.ebnf() + Suppress(";")).setResultsName('statements',listAllMatches = True) + 
         
-        ZeroOrMore( Literal("elseif") + Expression.ebnf().setResultsName("expressions",listAllMatches=True) + Literal("then") +
-                    ZeroOrMore(Statement.ebnf() + Supress(";")).setResultsName("statements",listAllMatches = True)) + 
+        ZeroOrMore( Literal("elseif") + Expression.ebnf().setResultsName('expressions',listAllMatches=True) + Literal('then') +
+                    ZeroOrMore(Statement.ebnf() + Suppress(";")).setResultsName('statements',listAllMatches = True)) + 
         
         Optional(Literal("else") +
-                 ZeroOrMore(Statement.ebnf() + Supress(";")).setResultsName("statements", listAllMatches = True)) +
-        Literal("end") + Literal("if")
+                 ZeroOrMore(Statement.ebnf() + Suppress(";")).setResultsName('statements', listAllMatches = True)) +
+        Literal('end') + Literal("if")
         ),
     
-    action = lambda s, l, t: IfStatement(expressions = t["expressions"], statements = t["statements"])
+    action = lambda s, l, t: IfStatement(expressions = t['expressions'], statements = t['statements'])
     )
 
 ForEquation.ebnf(
     syntax = (
         Literal("for") + ForIndices.ebnf()("indices") + Literal("loop") + 
-        ZeroOrMore( Equation.ebnf() + Supress(";"))("equations") + 
-        Literal("end") + Literal("for")
+        ZeroOrMore( Equation.ebnf() + Suppress(";"))('equations') + 
+        Literal('end') + Literal("for")
         ),
 
     action = lambda s, l, t: ForEquation(**dict(t))
@@ -343,67 +353,62 @@ ForEquation.ebnf(
 
 ForStatement.ebnf( 
     syntax = (
-        Literal("for") + ForIndices.ebnf()("indices") + Literal("loop") + 
-        ZeroOrMore( Statement.ebnf() + Supress(";"))("statements") + 
-        Literal("end") + Literal("for")
+        Suppress("for") + ForIndices.name("indices") + Suppress("loop") + 
+        ZeroOrMore( Statement.names('statements') + Suppress(";")) + 
+        Suppress('end') + Suppress("for")
         ),
 
     action = lambda s, l, t: ForStatement(**dict(t))
     )
 
 ForIndices.ebnf(
-    syntax = ForIndex.ebnf + ZeroOrMore(Supress(",") + ForIndex.ebnf()),
-
-    action = lambda s,l,t: ForIndices(t)
+    syntax = delimitedList(ForIndex.names('indices'), delim=','),
+    action = lambda s,l,t: ForIndices(**dict(t))
     )
 
 ForIndex.ebnf(
-    syntax = Ident.ebnf().setResultsName("identifier"),
-
+    syntax = IDENT.name("identifier") + Optional(Suppress('in') + Expression.name('expression')),
     action = lambda s, l, t: ForIndex(**dict(t))
     )
 
 WhileStatement.ebnf(
     syntax = (
-        Literal("while") + Expression.ebnf()("expression") + Literal("then") + 
-        ZeroOrMore(Statement.ebnf() + Supress(";"))("statements") + 
-        Literal("end") + Literal("while")
+        Suppress("while") + Expression.name("expression") + Suppress('loop') + 
+        StatementArray.name('statements') +
+        Suppress('end') + Suppress("while")
         ),
-
     action = lambda s,l,t: WhileStatement(**dict(t))
     )
 
 WhenEquation.ebnf(
     syntax = (
-        Literal("when") + Expression.ebnf()("expression") + Literal("then") + 
-        
-        ZeroOrMore(Equation.ebnf() + Supress(";"))("equations") + 
-        Optional( Literal("elsewhen") + Expression.ebnf()("expression_else") + Literal("then") + 
-                  ZeroOrMore(Equation.ebnf() + Supress(";"))("equations_else")) + 
-        Literal("end") + Literal("when")
+        Suppress('when') + Expression.names('expressions') + Suppress('then') + 
+        EquationArray.names('equations') + 
+        ZeroOrMore( 
+            Suppress("elsewhen") + Expression.names('expressions') + Suppress('then') + 
+            EquationArray.names('equations')) +
+        Suppress('end') + Suppress('when')
         ),
-
     action = lambda s,l,t: WhenEquation(**dict(t))
     )
 
 WhenStatement.ebnf(
     syntax = (
-        Literal("when") + Expression.ebnf()("expression") + Literal("then") + 
-        ZeroOrMore(Statement.ebnf() + Supress(";"))("statements") + 
-        Optional( Literal("elsewhen") + Expression.ebnf()("expression_else") + Literal("then") + 
-                  ZeroOrMore(Statement.ebnf() + Supress(";"))("statements_else")) + 
-        Literal("end") + Literal("when")
+        Suppress('when') + Expression.names('expressions') + Suppress('then') + 
+        StatementArray.names('statements') + 
+        ZeroOrMore( 
+            Suppress("elsewhen") + Expression.names('expressions') + Suppress('then') + 
+            StatementArray.name('statements')) +
+        Suppress('end') + Suppress('when')
         ),
-
     action = lambda s,l,t: WhenStatement(**dict(t))
     )
 
 ConnectClause.ebnf(
     syntax = (
-        Literal("connect") + Literal("(") + 
-        ComponentReference.ebnf()("component_1") + Literal(",") + 
-        ComponentReference.ebnf()("component_2") + Literal(")")
+        Suppress('connect') + Suppress('(') + 
+        ComponentReference.name("component_1") + Suppress(',') + 
+        ComponentReference.name("component_2") + Suppress(')')
         ),
-    
     action = lambda s,l,t: ConnectClause(**dict(t))
     )
