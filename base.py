@@ -1,4 +1,4 @@
-from pyparsing import Forward, Or, Literal
+from pyparsing import Forward, Or, Literal, Suppress
 
 class NonImplemented(Exception):
     pass
@@ -47,7 +47,8 @@ class ModelicaBase(object):
 
         if syntax is not None:
             if action is None:
-                self.__ebnf__ << syntax.setParseAction(lambda s,l,t: self(**dict(t)))
+                self.__ebnf__ << syntax
+                self.__ebnf__ = self.__ebnf__.setParseAction(lambda s,l,t: self(**dict(t)))
             else:
                 self.__ebnf__ << syntax
 
@@ -74,7 +75,16 @@ class ModelicaBase(object):
 def presenceBool(syntax):
     return syntax.setParseAction(lambda s,l,t:True)
 
-def hasLiteral(name):
-    return presenceBool(Literal(name))(name)
+def hasLiteral(name, variable=None):
+    if variable is None:
+        variable = name
 
+    return presenceBool(Suppress(name))(variable)
+
+
+def hasLiterals(names, variable=None):
+    if variable is None:
+        variable = "_".join(names)
+
+    return presenceBool(names.reduce(lambda x,y: Suppress(x) + Suppress(y)))(variable)
 

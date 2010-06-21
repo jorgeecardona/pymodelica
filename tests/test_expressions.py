@@ -1,6 +1,31 @@
 import unittest
 
-from expressions import Annotation, StringComment, Comment, Subscript, ArraySubscripts, ExpressionList, OutputExpressionList, NamedArgument, NamedArguments
+from expressions import Annotation, StringComment, Comment, Subscript, ArraySubscripts, ExpressionList, OutputExpressionList, NamedArgument, NamedArguments, FunctionArguments, Name
+
+from expressions import ForIndex, ForIndices
+
+class testEquations(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_for_indices(self):
+        indices = ForIndices.load("i")
+        self.assertEqual(indices.dump(), "i")
+
+        indices = ForIndices.load("i,j,k")
+        self.assertEqual(indices.dump(), "i, j, k")
+
+        indices = ForIndices.load(" i  in  index  ,  j  in  index ,  k   in  index")
+        self.assertEqual(indices.dump(), "i in index, j in index, k in index")
+
+
+    def test_form_index(self):
+        index = ForIndex.load("i")
+        self.assertEqual(index.dump(), "i")
+
+        index = ForIndex.load("i in index")
+        self.assertEqual(index.dump(), "i in index")
+
 
 class testExpressions(unittest.TestCase):
     def setUp(self):
@@ -74,6 +99,7 @@ class testExpressions(unittest.TestCase):
         self.assertEqual(named_arguments.dump(), "algo = i, otro = j")
 
     def test_function_arguments(self):
+
         function_arguments = FunctionArguments.load("i")
         self.assertEqual(function_arguments.dump(), "i")
 
@@ -86,8 +112,55 @@ class testExpressions(unittest.TestCase):
         function_arguments = FunctionArguments.load("algo = i")
         self.assertEqual(function_arguments.dump(), "algo = i")
 
-    
-        
+    def test_function_call_args(self):
+        pass
 
+    def test_component_reference(self):
+        pass
+
+    def test_name(self):
+        name = Name.load('a.b.c')
+        self.assertEqual(name.dump(), 'a.b.c')
+
+    def test_primary(self):
+        pass
+    
+    def test_factor(self):
+        pass
+
+    def test_mul_op(self):
+        pass
+
+    def test_term(self):
+        pass
+
+    def test_add_op(self):
+        pass
+
+    def test_arithmetic_expression(self):
+        pass
+
+    def test_rel_op(self):
+        pass
+
+    def test_relation(self):
+        pass
+
+    def test_logical_factor(self):
+        pass
+
+    def test_logical_term(self):
+        pass
+
+    def test_logical_expression(self):
+        pass
+
+    def test_simple_expression(self):
+        pass
+
+    def test_expression(self):
+        pass
+        
+    
 if __name__ == '__main__':
     unittest.main()

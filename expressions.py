@@ -35,6 +35,64 @@ class StoredDefinition(ModelicaBase):
 class ClassDefinition(ModelicaBase):
     pass
 
+class Class(ModelicaBase):
+    pass
+
+class Model(ModelicaBase):
+    pass
+
+class Record(ModelicaBase):
+    pass
+
+class Block(ModelicaBase):
+    pass
+
+class Connector(ModelicaBase):
+    pass
+
+class Type(ModelicaBase):
+    pass
+
+class Package(ModelicaBase):
+    pass
+
+class Function(ModelicaBase):
+    pass
+
+class Operator(ModelicaBase):
+    pass
+
+class ClassSpecifier(ModelicaBase):
+    def __init__(self, class_name, comment=None, composition=None, base_prefix=None, base_name=None, base_subscripts=None, base_modification=None):
+        pass
+    pass
+
+class BasePrefix(ModelicaBase):
+    pass
+
+class EnumList(ModelicaBase):
+    pass
+
+class EnumerationLiteral(ModelicaBase):
+    pass
+
+class Composition(ModelicaBase):
+    pass
+
+class LanguageSpecification(ModelicaBase):
+    pass
+
+class ExternalFunctionCall(ModelicaBase):
+    pass
+
+class ElementList(ModelicaBase):
+    pass
+
+class Element(ModelicaBase):
+    pass
+
+class ImportClause(ModelicaBase):
+    pass
 
 ### B.2.3 Extends
 
@@ -81,7 +139,7 @@ class Expression(ModelicaBase):
     def dump(self, indent = 0):
         return str(self.identifier)
 
-class SipleExpression(ModelicaBase):
+class SimpleExpression(ModelicaBase):
     pass
 
 class LogicalExpression(ModelicaBase):
@@ -135,10 +193,29 @@ class FunctionCallArgs(ModelicaBase):
     pass
 
 class FunctionArguments(ModelicaBase):
-    pass
+    def __init__(self, expressions=None, for_expression=None, for_indices=None, arguments=[]):
+        self.expressions = expressions
+        self.for_expression = for_expression
+        self.for_indices = for_indices
+        self.arguments = arguments
+
+    def dump(self):
+
+        elements = []
+        if isinstance(self.expressions, ExpressionList):
+            elements.append('%s' % (self.expressions))
+
+        if isinstance(self.for_expression, Expression):
+            if isinstance(self.for_indices, ForIndices):
+                elements.append('%s for %s' % (self.for_expression, self.for_indices))
+                    
+        if isinstance(self.arguments, NamedArguments):
+            elements.append('%s' % (self.arguments))
+
+        return ', '.join(elements)        
 
 class NamedArguments(ModelicaBase):
-    def __init__(self, *arguments):
+    def __init__(self, arguments):
         self.arguments = arguments
 
     def dump(self, indent = 0):
@@ -201,7 +278,7 @@ class Comment(ModelicaBase):
         return s
 
 class StringComment(ModelicaBase):
-    def __init__(self, *comments):
+    def __init__(self, comments):
         self.comments = comments
         
     def dump(self, indent = 0):
@@ -230,6 +307,102 @@ StoredDefinition.ebnf(
 ### B.2.2 Class Definition
 
 ClassDefinition.ebnf(
+    syntax = (
+        Class.name('definition')
+        )
+    )
+
+Class.ebnf(
+    syntax = (
+        Optional(hasLiteral('encapsulated')) +
+        Optional(hasLiteral('partial')) + 
+        Suppress('class') + ClassSpecifier.name('specification')
+        )
+    )
+
+Model.ebnf(
+    syntax = (
+        Optional(hasLiteral('encapsulated')) +
+        Optional(hasLiteral('partial')) + 
+        Suppress('model') + ClassSpecifier.name('specification')
+        )
+    )
+
+Record.ebnf(
+    syntax = (
+        Optional(hasLiteral('encapsulated')) +
+        Optional(hasLiteral('partial')) + 
+        Suppress('record') + ClassSpecifier.name('specification')
+        )
+    )
+
+Block.ebnf(
+    syntax = (
+        Optional(hasLiteral('encapsulated')) +
+        Optional(hasLiteral('partial')) + 
+        Suppress('block') + ClassSpecifier.name('specification')
+        )
+    )
+
+Connector.ebnf(
+    syntax = (
+        Optional(hasLiteral('encapsulated')) +
+        Optional(hasLiteral('partial')) + 
+        Optional(hasLiteral('expandable')) +
+        Suppress('connector') + ClassSpecifier.name('specification')
+        )
+    )
+
+Type.ebnf(
+    syntax = (
+        Optional(hasLiteral('encapsulated')) +
+        Optional(hasLiteral('partial')) + 
+        Suppress('type') + ClassSpecifier.name('specification')
+        )
+    )
+
+Package.ebnf(
+    syntax = (
+        Optional(hasLiteral('encapsulated')) +
+        Optional(hasLiteral('partial')) + 
+        Suppress('package') + ClassSpecifier.name('specification')
+        )
+    )
+
+Function.ebnf(
+    syntax = (
+        Optional(hasLiteral('encapsulated')) +
+        Optional(hasLiteral('partial')) + 
+        Suppress('function') + ClassSpecifier.name('specification')
+        )
+    )
+
+Operator.ebnf(
+    syntax = (
+        Optional(hasLiteral('encapsulated')) +
+        Optional(hasLiteral('partial')) + 
+        Suppress('operator') + Optional(
+            hasLiteral('function') ^ hasLiteral('record')
+            ) + ClassSpecifier.name('specification')
+        )
+    )
+
+ClassSpecifier.ebnf(
+    syntax = Or(
+        (
+            IDENT.name('class_name') + StringComment.name('comment') + 
+            Composition.name('composition') + 
+            Suppress('end') + IDENT.name('class_name')
+            ),
+        (
+            IDENT.name('class_name') + Suppress('=') + 
+            BasePrefix.name('base_prefix') + Name.name('base_name') + 
+            Optional(ArraySubscripts.name('base_subscripts')) + 
+            Optional(ClassModification.name('base_modification')) +
+            Comment.name('comment')
+            ),
+        
+        )
     )
 
 ### B.2.3 Extends
@@ -248,73 +421,83 @@ ClassDefinition.ebnf(
 
 ForIndices.ebnf(
     syntax = delimitedList(ForIndex.names('indices'), delim=','),
-    action = lambda s,l,t: ForIndices(**dict(t))
     )
 
 ForIndex.ebnf(
     syntax = IDENT.name("identifier") + Optional(Suppress('in') + Expression.name('expression')),
-    action = lambda s, l, t: ForIndex(**dict(t))
     )
 
 
 ### B.2.7 Expressions
 
+Name.ebnf(
+    syntax = delimitedList(IDENT.names('names'), delim='.')
+    )
+
+ComponentReference.ebnf(
+    syntax = delimitedList(IDENT.names('names') + Optional(ArraySubscripts.names('subscripts')), delim='.')
+    )
+
+FunctionCallArgs.ebnf(
+    syntax = Suppress('(') + Optional(FunctionArguments.name('arguments')) + Suppress(')')
+    )
+
 FunctionArguments.ebnf(
-    syntax = Or(Expression.name('expression') + Optional(Or(Suppress(',') + FunctionArguments.name("arguments"), Suppress('for') + ForIndices.name('for_indices'))), NamedArguments.name('arguments')),
-    action = lambda s,l,t: FunctionArguments(**dict(t))
+    syntax = Or([
+            NamedArguments.name('arguments'),
+            Expression.name('for_expression') + Suppress('for') + ForIndices.name('for_indices'),
+            ExpressionList.name('expressions'),
+            ExpressionList.name('expressions') + Suppress(',') + NamedArguments.name('arguments'),
+            ExpressionList.name('expressions') + Suppress(',') + 
+            Expression.name('for_expression') + Suppress('for') + ForIndices.name('for_indices')
+            ])
+    
+#    syntax = Or(
+#        Expression.name('expression') + Optional(Or(Suppress(',') + FunctionArguments.name("arguments"), Suppress('for') + ForIndices.name('for_indices'))), 
+#        NamedArguments.name('arguments')
+#        )
     )
 
 Expression.ebnf(
-    syntax = IDENT.name("identifier"),
-    action = lambda s,l,t: Expression(**dict(t))
+    syntax = IDENT.name("identifier")
     )
 
 NamedArguments.ebnf(
-    syntax = delimitedList(NamedArgument.ebnf(), delim=","),
-    action = lambda s,l,t: NamedArguments(*list(t))
+    syntax = delimitedList(NamedArgument.names('arguments'), delim=","),
     )
 
 NamedArgument.ebnf(
     syntax = IDENT.name('identifier') + Suppress("=") + Expression.name('expression'),
-    action = lambda s,l,t: NamedArgument(**dict(t))
     )
 
 OutputExpressionList.ebnf(
     syntax = delimitedList(Expression.names('expressions'), delim=","),
-    action = lambda s,l,t: OutputExpressionList(**dict(t))
     )
 
 ExpressionList.ebnf(
     syntax = delimitedList(Expression.names('expressions'), delim=","),
-    action = lambda s,l,t: ExpressionList(**dict(t))
     )
 
 ArraySubscripts.ebnf(
     syntax = Suppress("[") + delimitedList(Subscript.names('subscripts'), delim=",") + Suppress("]"),
-    action = lambda s,l,t: ArraySubscripts(**dict(t))
     )
 
 Subscript.ebnf(
     syntax = Suppress(":") ^ Expression.name("expression"),
-    action = lambda s,l,t: Subscript(**dict(t))
     )
 
 ComponentReference.ebnf(
     syntax = IDENT.name("identifier"),
-    action = lambda s,l,t: ComponentReference(**dict(t))
     )
 
 Comment.ebnf(
     syntax = StringComment.name("comment") + Optional(Annotation.name("annotation")),
-    action = lambda s, l, t: Comment(**dict(t))
     )
 
 StringComment.ebnf(
-    syntax = delimitedList(STRING.ebnf(), delim="+"),
-    action = lambda s,l,t: StringComment(*list(t))
+    syntax = delimitedList(STRING.names('comments'), delim="+"),
     )
 
 Annotation.ebnf(
     syntax = Literal("annotation") + ClassModification.name('modification'),
-#    action = lambda s,l,t: Annotation(**dict(t))
     )
