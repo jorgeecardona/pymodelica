@@ -1,4 +1,3 @@
-
 # PyModelica
 
 This project is intended to create a modelica simulator tool based on python tools, and higly integrateable with actual python scientific tools.
@@ -25,5 +24,13 @@ One approach could be to define a tiny solver, and then define an interface to o
  * **SUNDIALS**: https://computation.llnl.gov/casc/sundials/main.html
  * **FiPy**: http://www.ctcms.nist.gov/fipy/
  * ...
+
+## Some applications for reference
+
+ * Comsol
+ * MapleSim
+ * Dymola
+ * 
+
 
 ## References
